@@ -78,6 +78,13 @@
   ::selection {
     background: rgba(124, 92, 255, 0.18);
   }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  a[href] {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {

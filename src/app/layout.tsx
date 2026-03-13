@@ -5,6 +5,20 @@ import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants/app";
 import { Providers } from "@/app/providers";
 import "./globals.css";
 
+function getMetadataBase() {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+
+  if (!appUrl) {
+    return new URL("http://localhost:3000");
+  }
+
+  try {
+    return new URL(appUrl);
+  } catch {
+    return new URL("http://localhost:3000");
+  }
+}
+
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-plus-jakarta",
@@ -16,13 +30,26 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: getMetadataBase(),
   title: {
     default: APP_NAME,
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
+  applicationName: APP_NAME,
   manifest: "/manifest.webmanifest",
+  referrer: "no-referrer",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      nosnippet: true,
+    },
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

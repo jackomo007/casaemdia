@@ -50,7 +50,7 @@ export function CalendarEventForm() {
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
       <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="event-title">Titulo</Label>
+        <Label htmlFor="event-title">Título</Label>
         <Input
           id="event-title"
           {...form.register("title")}
@@ -58,7 +58,7 @@ export function CalendarEventForm() {
         />
       </div>
       <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="event-description">Descricao</Label>
+        <Label htmlFor="event-description">Descrição</Label>
         <Input
           id="event-description"
           {...form.register("description")}
@@ -87,9 +87,9 @@ export function CalendarEventForm() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="school">Escola</SelectItem>
-            <SelectItem value="medical">Saude</SelectItem>
+            <SelectItem value="medical">Saúde</SelectItem>
             <SelectItem value="billing">Financeiro</SelectItem>
-            <SelectItem value="family">Familia</SelectItem>
+            <SelectItem value="family">Família</SelectItem>
             <SelectItem value="shopping">Compras</SelectItem>
             <SelectItem value="task">Tarefa</SelectItem>
           </SelectContent>
@@ -104,7 +104,7 @@ export function CalendarEventForm() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="event-childName">Crianca</Label>
+        <Label htmlFor="event-childName">Criança</Label>
         <Input
           id="event-childName"
           {...form.register("childName")}

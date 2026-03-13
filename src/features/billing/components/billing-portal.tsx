@@ -12,7 +12,7 @@ export function BillingPortal({ billing }: { billing: BillingState }) {
       <PageHeader
         eyebrow="Billing"
         title="Portal interno de assinatura"
-        description="Status atual, historico simples, renovacao e caminho para troca de plano."
+        description="Status atual, histórico simples, renovação e caminho para troca de plano."
       />
       <TrialBanner
         label={billing.planName}
@@ -23,7 +23,7 @@ export function BillingPortal({ billing }: { billing: BillingState }) {
           <CardContent className="space-y-4 p-6">
             <SectionHeader
               title="Assinatura"
-              description="Estado atual da familia"
+              description="Estado atual da família"
             />
             <BillingStatusChip status={billing.status} />
             <div className="bg-muted/50 rounded-3xl p-4 text-sm text-slate-600">
@@ -31,7 +31,7 @@ export function BillingPortal({ billing }: { billing: BillingState }) {
               <p className="mt-1">{billing.planName}</p>
             </div>
             <div className="bg-muted/50 rounded-3xl p-4 text-sm text-slate-600">
-              <p className="font-medium text-slate-950">Proxima referencia</p>
+              <p className="font-medium text-slate-950">Próxima referência</p>
               <p className="mt-1">
                 {billing.currentPeriodEnd
                   ? formatLongDate(billing.currentPeriodEnd)
@@ -43,8 +43,8 @@ export function BillingPortal({ billing }: { billing: BillingState }) {
         <Card className="border-border/70 rounded-[32px] bg-white/90">
           <CardContent className="space-y-5 p-6">
             <SectionHeader
-              title="Historico de cobrancas"
-              description="Mockado para Mercado Pago sandbox e reconciliacao futura."
+              title="Histórico de cobranças"
+              description="Mockado para Mercado Pago sandbox e reconciliação futura."
             />
             <div className="space-y-3">
               {billing.history.map((item) => (

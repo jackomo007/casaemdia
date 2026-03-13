@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getSessionScenario } from "@/lib/auth/session";
+import { getWorkspaceSession } from "@/lib/auth/session";
 import {
   addFinanceEntry,
   getWorkspaceSnapshot,
@@ -8,11 +8,21 @@ import {
 import type { CreateFinanceEntryInput } from "@/types";
 
 export async function getFinanceOverview() {
-  const scenario = await getSessionScenario();
-  return getWorkspaceSnapshot(scenario).finance;
+  const session = await getWorkspaceSession();
+  return getWorkspaceSnapshot(session).finance;
 }
 
 export async function createFinanceEntry(input: CreateFinanceEntryInput) {
-  const scenario = await getSessionScenario();
-  return addFinanceEntry(scenario, input).finance;
+  const session = await getWorkspaceSession();
+  return addFinanceEntry(session, input).finance;
+}
+
+export async function createFinanceEntries(inputs: CreateFinanceEntryInput[]) {
+  const session = await getWorkspaceSession();
+
+  for (const input of inputs) {
+    addFinanceEntry(session, input);
+  }
+
+  return getWorkspaceSnapshot(session).finance;
 }

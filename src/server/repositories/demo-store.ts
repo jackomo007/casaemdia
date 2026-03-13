@@ -4,29 +4,68 @@ import type {
   CreateTaskInput,
   DemoScenario,
   HouseholdWorkspace,
+  SessionUser,
+  WorkspacePreset,
 } from "@/types";
-import { getDemoWorkspace } from "@/server/repositories/demo-data";
+import {
+  createBlankWorkspace,
+  getDemoWorkspace,
+} from "@/server/repositories/demo-data";
 
-type DemoStore = Record<DemoScenario, HouseholdWorkspace>;
-
-const store: DemoStore = {
-  trialing: structuredClone(getDemoWorkspace("trialing")),
-  active: structuredClone(getDemoWorkspace("active")),
-  expired: structuredClone(getDemoWorkspace("expired")),
-  past_due: structuredClone(getDemoWorkspace("past_due")),
+type DemoStoreContext = {
+  scenario: DemoScenario;
+  workspaceKey: string;
+  workspacePreset: WorkspacePreset;
+  user: SessionUser | null;
 };
 
+const store = new Map<string, HouseholdWorkspace>();
+
+function getStoreKey({
+  scenario,
+  workspaceKey,
+}: Pick<DemoStoreContext, "scenario" | "workspaceKey">) {
+  return `${workspaceKey}:${scenario}`;
+}
+
+function createWorkspace({
+  scenario,
+  workspacePreset,
+  user,
+}: Omit<DemoStoreContext, "workspaceKey">) {
+  const baseWorkspace =
+    workspacePreset === "sample"
+      ? getDemoWorkspace(scenario)
+      : createBlankWorkspace(user ?? undefined, scenario);
+
+  return structuredClone(baseWorkspace);
+}
+
+function getWorkspace(context: DemoStoreContext): HouseholdWorkspace {
+  const key = getStoreKey(context);
+  const existingWorkspace = store.get(key);
+
+  if (existingWorkspace) {
+    return existingWorkspace;
+  }
+
+  const workspace = createWorkspace(context);
+  store.set(key, workspace);
+
+  return workspace;
+}
+
 export function getWorkspaceSnapshot(
-  scenario: DemoScenario,
+  context: DemoStoreContext,
 ): HouseholdWorkspace {
-  return store[scenario];
+  return getWorkspace(context);
 }
 
 export function addFinanceEntry(
-  scenario: DemoScenario,
+  context: DemoStoreContext,
   input: CreateFinanceEntryInput,
 ): HouseholdWorkspace {
-  const workspace = store[scenario];
+  const workspace = getWorkspace(context);
   const entry = {
     id: `entry-${Date.now()}`,
     title: input.title,
@@ -58,10 +97,10 @@ export function addFinanceEntry(
 }
 
 export function addCalendarEvent(
-  scenario: DemoScenario,
+  context: DemoStoreContext,
   input: CreateCalendarEventInput,
 ): HouseholdWorkspace {
-  const workspace = store[scenario];
+  const workspace = getWorkspace(context);
   const event = {
     id: `event-${Date.now()}`,
     title: input.title,
@@ -82,10 +121,10 @@ export function addCalendarEvent(
 }
 
 export function addTask(
-  scenario: DemoScenario,
+  context: DemoStoreContext,
   input: CreateTaskInput,
 ): HouseholdWorkspace {
-  const workspace = store[scenario];
+  const workspace = getWorkspace(context);
   const task = {
     id: `task-${Date.now()}`,
     title: input.title,
@@ -106,10 +145,10 @@ export function addTask(
 }
 
 export function activatePlan(
-  scenario: DemoScenario,
+  context: DemoStoreContext,
   planCode: string,
 ): HouseholdWorkspace {
-  const workspace = store[scenario];
+  const workspace = getWorkspace(context);
 
   workspace.billing = {
     ...workspace.billing,

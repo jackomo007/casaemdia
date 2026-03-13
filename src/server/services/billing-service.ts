@@ -1,7 +1,7 @@
 import "server-only";
 
 import { subscriptionPlans } from "@/lib/constants/plans";
-import { getSessionScenario } from "@/lib/auth/session";
+import { getWorkspaceSession } from "@/lib/auth/session";
 import {
   activatePlan,
   getWorkspaceSnapshot,
@@ -13,11 +13,11 @@ export async function getPlanCatalog() {
 }
 
 export async function getBillingState() {
-  const scenario = await getSessionScenario();
-  return getWorkspaceSnapshot(scenario).billing;
+  const session = await getWorkspaceSession();
+  return getWorkspaceSnapshot(session).billing;
 }
 
 export async function activateSubscriptionPlan(planCode: PlanCode) {
-  const scenario = await getSessionScenario();
-  return activatePlan(scenario, planCode).billing;
+  const session = await getWorkspaceSession();
+  return activatePlan(session, planCode).billing;
 }

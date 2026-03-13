@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { type Resolver, useForm } from "react-hook-form";
+import { type Resolver, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,21 +28,25 @@ export function FinanceEntryForm() {
   const form = useForm<FinanceEntrySchema>({
     resolver: zodResolver(financeEntrySchema) as Resolver<FinanceEntrySchema>,
     defaultValues: {
-      title: "Supermercado do fim de semana",
-      amount: 245.9,
+      title: "",
+      amount: undefined,
       kind: "expense",
-      category: "Alimentacao",
-      member: "Marina",
-      dueDate: "2026-03-22",
-      competenceDate: "2026-03-01",
-      account: "Conta principal",
+      category: "",
+      member: "",
+      dueDate: "",
+      competenceDate: "",
+      account: "",
     },
+  });
+  const selectedKind = useWatch({
+    control: form.control,
+    name: "kind",
   });
 
   const onSubmit = form.handleSubmit((values) => {
     startTransition(async () => {
       await createFinanceEntryAction(values);
-      toast.success("Lancamento salvo.");
+      toast.success("Lançamento salvo.");
       router.refresh();
       form.reset();
     });
@@ -51,11 +55,12 @@ export function FinanceEntryForm() {
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
       <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="finance-title">Titulo</Label>
+        <Label htmlFor="finance-title">Título</Label>
         <Input
           id="finance-title"
           {...form.register("title")}
           className="rounded-2xl"
+          placeholder="Ex.: Mercado da semana"
         />
       </div>
       <div className="space-y-2">
@@ -66,12 +71,13 @@ export function FinanceEntryForm() {
           step="0.01"
           {...form.register("amount")}
           className="rounded-2xl"
+          placeholder="0,00"
         />
       </div>
       <div className="space-y-2">
         <Label>Tipo</Label>
         <Select
-          defaultValue={form.getValues("kind")}
+          value={selectedKind}
           onValueChange={(value) =>
             form.setValue("kind", value as FinanceEntrySchema["kind"])
           }
@@ -91,6 +97,7 @@ export function FinanceEntryForm() {
           id="finance-category"
           {...form.register("category")}
           className="rounded-2xl"
+          placeholder="Ex.: Alimentação"
         />
       </div>
       <div className="space-y-2">
@@ -99,6 +106,7 @@ export function FinanceEntryForm() {
           id="finance-member"
           {...form.register("member")}
           className="rounded-2xl"
+          placeholder="Ex.: Casa"
         />
       </div>
       <div className="space-y-2">
@@ -111,7 +119,7 @@ export function FinanceEntryForm() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="finance-competence">Competencia</Label>
+        <Label htmlFor="finance-competence">Competência</Label>
         <Input
           id="finance-competence"
           type="date"
@@ -125,6 +133,7 @@ export function FinanceEntryForm() {
           id="finance-account"
           {...form.register("account")}
           className="rounded-2xl"
+          placeholder="Ex.: Conta principal"
         />
       </div>
       <Button
@@ -132,7 +141,7 @@ export function FinanceEntryForm() {
         disabled={isPending}
         className="h-11 rounded-2xl md:col-span-2"
       >
-        {isPending ? "Salvando..." : "Criar lancamento"}
+        {isPending ? "Salvando..." : "Criar lançamento"}
       </Button>
     </form>
   );

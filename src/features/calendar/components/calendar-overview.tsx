@@ -11,16 +11,16 @@ export function CalendarOverview({ events }: { events: CalendarEventItem[] }) {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Agenda familiar"
-        title="Compromissos da casa, da escola e da saude"
-        description="Views de mes, semana e lista podem crescer daqui sem refatorar a base de dominio."
+        title="Compromissos da casa, da escola e da saúde"
+        description="Views de mês, semana e lista podem crescer daqui sem refatorar a base de domínio."
       />
-      <FilterBar labels={["Mes", "Semana", "Agenda", "Todas as criancas"]} />
+      <FilterBar labels={["Mês", "Semana", "Agenda", "Todas as crianças"]} />
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-border/70 rounded-[32px] bg-white/85">
           <CardContent className="space-y-5 p-6">
             <SectionHeader
               title="Linha do tempo"
-              description="Proximos eventos da rotina familiar."
+              description="Próximos eventos da rotina familiar."
             />
             <div className="grid gap-4 md:grid-cols-2">
               {events.map((event) => (

@@ -13,13 +13,13 @@ export function Sidebar() {
     <aside className="hidden h-[calc(100vh-2rem)] w-72 shrink-0 rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-[0_24px_80px_-48px_rgba(80,64,153,0.55)] backdrop-blur lg:flex lg:flex-col">
       <div className="rounded-[24px] bg-[radial-gradient(circle_at_top,_rgba(130,103,250,0.18),transparent_60%),linear-gradient(180deg,#fff,#faf7ff)] p-5">
         <p className="text-primary text-xs font-semibold tracking-[0.24em] uppercase">
-          Painel da Familia
+          Painel da Família
         </p>
         <h2 className="font-display mt-3 text-2xl font-semibold text-slate-900">
-          Operacao familiar em um so lugar
+          Operação familiar em um só lugar
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          Rotina, dinheiro, escola e saude com contexto visual.
+          Rotina, dinheiro, escola e saúde com contexto visual.
         </p>
       </div>
       <nav className="mt-6 flex flex-1 flex-col gap-1">
@@ -47,10 +47,10 @@ export function Sidebar() {
       </nav>
       <div className="border-primary/10 bg-primary/5 rounded-[24px] border p-4">
         <p className="text-sm font-semibold text-slate-900">
-          7 dias gratis sem cartao
+          7 dias grátis sem cartão
         </p>
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          Convide a familia, organize a semana e ative um plano quando fizer
+          Convide a família, organize a semana e ative um plano quando fizer
           sentido.
         </p>
       </div>

@@ -8,8 +8,8 @@ export function PricingGrid({ plans }: { plans: PlanDefinition[] }) {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Planos"
-        title="Assinatura sem friccao"
-        description="7 dias gratis sem cartao e upgrade 100% self-service quando a familia estiver pronta."
+        title="Assinatura sem fricção"
+        description="7 dias grátis sem cartão e upgrade 100% self-service quando a família estiver pronta."
       />
       <div className="grid gap-5 xl:grid-cols-4">
         {plans.map((plan) => (
@@ -18,7 +18,7 @@ export function PricingGrid({ plans }: { plans: PlanDefinition[] }) {
             plan={plan}
             action={
               plan.code === "TRIAL" ? (
-                <SelectPlanButton planCode="FAMILY" label="Comecar com trial" />
+                <SelectPlanButton planCode="FAMILY" label="Começar com trial" />
               ) : (
                 <SelectPlanButton planCode={plan.code} />
               )

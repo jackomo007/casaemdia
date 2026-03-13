@@ -1,8 +1,19 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { applySensitiveRouteHeaders } from "@/lib/security";
+
 const privatePrefixes = ["/dashboard"];
 const publicOnlyRoutes = ["/login", "/register"];
+const sensitivePrefixes = [
+  "/dashboard",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/billing",
+  "/select-plan",
+  "/onboarding",
+];
 
 function normalizeScenario(value?: string | null) {
   if (value === "active" || value === "expired" || value === "past_due") {
@@ -14,6 +25,10 @@ function normalizeScenario(value?: string | null) {
 
 function canAccess(scenario: string) {
   return scenario !== "expired";
+}
+
+function isSensitiveRoute(pathname: string) {
+  return sensitivePrefixes.some((prefix) => pathname.startsWith(prefix));
 }
 
 export function middleware(request: NextRequest) {
@@ -32,25 +47,43 @@ export function middleware(request: NextRequest) {
   if (isPrivateRoute && !session) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(loginUrl);
+    return applySensitiveRouteHeaders(NextResponse.redirect(loginUrl));
   }
 
   if (isPrivateRoute && !canAccess(scenario)) {
-    return NextResponse.redirect(new URL("/billing/locked", request.url));
+    return applySensitiveRouteHeaders(
+      NextResponse.redirect(new URL("/billing/locked", request.url)),
+    );
   }
 
   if (isPublicOnlyRoute && session) {
-    return NextResponse.redirect(
-      new URL(
-        canAccess(scenario) ? "/dashboard" : "/billing/locked",
-        request.url,
+    return applySensitiveRouteHeaders(
+      NextResponse.redirect(
+        new URL(
+          canAccess(scenario) ? "/dashboard" : "/billing/locked",
+          request.url,
+        ),
       ),
     );
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  if (isSensitiveRoute(pathname)) {
+    applySensitiveRouteHeaders(response);
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
+  matcher: [
+    "/dashboard/:path*",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/billing/:path*",
+    "/select-plan",
+    "/onboarding",
+  ],
 };

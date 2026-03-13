@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getSessionScenario } from "@/lib/auth/session";
+import { getWorkspaceSession } from "@/lib/auth/session";
 import {
   addTask,
   getWorkspaceSnapshot,
@@ -8,11 +8,11 @@ import {
 import type { CreateTaskInput } from "@/types";
 
 export async function getTaskList() {
-  const scenario = await getSessionScenario();
-  return getWorkspaceSnapshot(scenario).tasks;
+  const session = await getWorkspaceSession();
+  return getWorkspaceSnapshot(session).tasks;
 }
 
 export async function createTask(input: CreateTaskInput) {
-  const scenario = await getSessionScenario();
-  return addTask(scenario, input).tasks;
+  const session = await getWorkspaceSession();
+  return addTask(session, input).tasks;
 }

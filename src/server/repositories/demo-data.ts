@@ -9,6 +9,7 @@ import type {
   HealthReminder,
   HouseholdWorkspace,
   InsightCardData,
+  SessionUser,
   ShoppingListSummary,
   TaskItem,
 } from "@/types";
@@ -25,16 +26,16 @@ const baseEvents: CalendarEventItem[] = [
   },
   {
     id: "event-vaccine",
-    title: "Reforco da vacina da gripe",
+    title: "Reforço da vacina da gripe",
     description: "Levar carteirinha e documento.",
     startsAt: "2026-03-17T13:30:00.000Z",
     kind: "medical",
-    badge: "Saude",
+    badge: "Saúde",
     childName: "Theo",
   },
   {
     id: "event-bill",
-    title: "Vencimento do cartao Nubank",
+    title: "Vencimento do cartão Nubank",
     description: "Fechar o ciclo antes de novas compras grandes.",
     startsAt: "2026-03-18T12:00:00.000Z",
     kind: "billing",
@@ -43,14 +44,14 @@ const baseEvents: CalendarEventItem[] = [
   {
     id: "event-couple",
     title: "Consulta do casal",
-    description: "Sessao de acompanhamento marcada no centro.",
+    description: "Sessão de acompanhamento marcada no centro.",
     startsAt: "2026-03-20T19:00:00.000Z",
     kind: "family",
-    badge: "Familia",
+    badge: "Família",
   },
   {
     id: "event-school-meeting",
-    title: "Reuniao pedagogica",
+    title: "Reunião pedagógica",
     description: "Feedback do bimestre e agenda de provas.",
     startsAt: "2026-03-21T10:00:00.000Z",
     kind: "school",
@@ -74,7 +75,7 @@ const baseTasks: TaskItem[] = [
   {
     id: "task-electricity",
     title: "Conferir conta de energia",
-    description: "Comparar com o consumo do mes passado.",
+    description: "Comparar com o consumo do mês passado.",
     dueDate: "2026-03-18T09:00:00.000Z",
     priority: "medium",
     status: "in_progress",
@@ -84,8 +85,8 @@ const baseTasks: TaskItem[] = [
   },
   {
     id: "task-math-homework",
-    title: "Licao de matematica da Livia",
-    description: "Pagina 42 e exercicios 3 a 8.",
+    title: "Lição de matemática da Livia",
+    description: "Página 42 e exercícios 3 a 8.",
     dueDate: "2026-03-17T18:00:00.000Z",
     priority: "high",
     status: "todo",
@@ -129,14 +130,14 @@ const baseShopping: ShoppingListSummary[] = [
   },
   {
     id: "shop-party",
-    title: "Aniversario do Theo",
+    title: "Aniversário do Theo",
     category: "Evento",
     estimatedTotal: 212.9,
     progress: 20,
     items: [
       {
         id: "item-decoration",
-        name: "Decoracao futebol",
+        name: "Decoração futebol",
         quantity: "1 kit",
         estimatedCost: 79.9,
         checked: false,
@@ -155,33 +156,33 @@ const baseShopping: ShoppingListSummary[] = [
 const baseInsights: InsightCardData[] = [
   {
     id: "insight-fixed-cost",
-    title: "Gasto fixo alto em relacao a renda",
+    title: "Gasto fixo alto em relação à renda",
     content:
-      "O custo fixo da casa esta em 76% da renda prevista do mes. Vale revisar assinaturas e compras recorrentes.",
-    tone: "Atencao",
+      "O custo fixo da casa está em 76% da renda prevista do mês. Vale revisar assinaturas e compras recorrentes.",
+    tone: "Atenção",
     kind: "financial",
     disclaimer:
-      "Sugestao educativa. Nao representa consultoria financeira ou recomendacao regulada.",
+      "Sugestão educativa. Não representa consultoria financeira ou recomendação regulada.",
   },
   {
     id: "insight-busy-week",
-    title: "Semana carregada para escola e saude",
+    title: "Semana carregada para escola e saúde",
     content:
-      "Os proximos 7 dias concentram 4 compromissos escolares e 2 medicos. Antecipe mochila, uniforme e documentos.",
-    tone: "Organizacao",
+      "Os próximos 7 dias concentram 4 compromissos escolares e 2 médicos. Antecipe mochila, uniforme e documentos.",
+    tone: "Organização",
     kind: "organization",
     disclaimer:
       "Insight gerado a partir dos registros atuais e pode mudar conforme novos eventos forem adicionados.",
   },
   {
     id: "insight-reserve",
-    title: "Reserva de emergencia em 12 meses",
+    title: "Reserva de emergência em 12 meses",
     content:
-      "Se a familia reservar R$ 1.000 por mes, pode acumular R$ 12.000 em 1 ano para reduzir pressao em meses imprevistos.",
-    tone: "Cenario",
+      "Se a família reservar R$ 1.000 por mês, pode acumular R$ 12.000 em 1 ano para reduzir pressão em meses imprevistos.",
+    tone: "Cenário",
     kind: "ideas",
     disclaimer:
-      "Cenario estimado para fins educativos. Resultados dependem do comportamento financeiro real.",
+      "Cenário estimado para fins educativos. Resultados dependem do comportamento financeiro real.",
   },
 ];
 
@@ -190,19 +191,19 @@ const baseChildren: ChildSummary[] = [
     id: "child-livia",
     name: "Livia",
     age: 9,
-    school: "Colegio Jardim das Letras",
+    school: "Colégio Jardim das Letras",
     pendingTasks: 3,
-    nextEvent: "Reuniao pedagogica em 21 de marco",
+    nextEvent: "Reunião pedagógica em 21 de março",
     note: "Levar caderno de leitura na segunda.",
   },
   {
     id: "child-theo",
     name: "Theo",
     age: 5,
-    school: "Espaco Crescer",
+    school: "Espaço Crescer",
     pendingTasks: 1,
-    nextEvent: "Vacina da gripe em 17 de marco",
-    note: "Separar roupa confortavel para a consulta.",
+    nextEvent: "Vacina da gripe em 17 de março",
+    note: "Separar roupa confortável para a consulta.",
   },
 ];
 
@@ -210,14 +211,14 @@ const baseHealth: HealthReminder[] = [
   {
     id: "health-vaccine",
     title: "Vacina da gripe",
-    description: "Reforco anual com carteirinha em maos.",
+    description: "Reforço anual com carteirinha em mãos.",
     dueDate: "2026-03-17T13:30:00.000Z",
     childName: "Theo",
   },
   {
     id: "health-dentist",
-    title: "Dentista da familia",
-    description: "Consulta preventiva do casal e avaliacao infantil.",
+    title: "Dentista da família",
+    description: "Consulta preventiva do casal e avaliação infantil.",
     dueDate: "2026-03-24T14:00:00.000Z",
   },
 ];
@@ -225,7 +226,7 @@ const baseHealth: HealthReminder[] = [
 const financeEntries: FinanceEntry[] = [
   {
     id: "fin-income-clt",
-    title: "Salario CLT Rafael",
+    title: "Salário CLT Rafael",
     amount: 7800,
     kind: "income",
     category: "Salario",
@@ -276,10 +277,10 @@ const financeEntries: FinanceEntry[] = [
   },
   {
     id: "fin-expense-card",
-    title: "Cartao Nubank",
+    title: "Cartão Nubank",
     amount: 1698.9,
     kind: "expense",
-    category: "Cartao",
+    category: "Cartão",
     member: "Marina",
     dueDate: "2026-03-18T12:00:00.000Z",
     competenceDate: "2026-03-01T03:00:00.000Z",
@@ -311,12 +312,12 @@ const financeOverview: FinanceOverviewData = {
   entries: financeEntries,
   categoryBreakdown: [
     { id: "cat-moradia", name: "Moradia", amount: 2400, percentage: 35 },
-    { id: "cat-cartao", name: "Cartao", amount: 1698.9, percentage: 24 },
+    { id: "cat-cartao", name: "Cartão", amount: 1698.9, percentage: 24 },
     { id: "cat-casa", name: "Casa", amount: 286.5, percentage: 4 },
     { id: "cat-escola", name: "Escola", amount: 359.9, percentage: 5 },
     {
       id: "cat-alimentacao",
-      name: "Alimentacao",
+      name: "Alimentação",
       amount: 1120,
       percentage: 16,
     },
@@ -334,21 +335,21 @@ const financeOverview: FinanceOverviewData = {
 
 const dashboardBase: DashboardData = {
   greetingName: "Marina",
-  householdName: "Familia Oliveira",
-  monthLabel: "Marco de 2026",
+  householdName: "Família Oliveira",
+  monthLabel: "Março de 2026",
   metrics: [
     {
       id: "metric-balance",
-      label: "Saldo do mes",
+      label: "Saldo do mês",
       value: "R$ 3.854,70",
-      helper: "Previsao ainda positiva para os proximos 12 dias",
+      helper: "Previsão ainda positiva para os próximos 12 dias",
       trend: "up",
     },
     {
       id: "metric-events",
-      label: "Eventos nos proximos 7 dias",
+      label: "Eventos nos próximos 7 dias",
       value: "6",
-      helper: "Escola e saude concentram a agenda",
+      helper: "Escola e saúde concentram a agenda",
       trend: "neutral",
     },
     {
@@ -362,15 +363,15 @@ const dashboardBase: DashboardData = {
       id: "metric-shopping",
       label: "Compras em aberto",
       value: "R$ 599,30",
-      helper: "Mercado e aniversario do Theo",
+      helper: "Mercado e aniversário do Theo",
       trend: "neutral",
     },
   ],
   alerts: [
     {
       id: "alert-card",
-      title: "Cartao fecha em 5 dias",
-      description: "Gastos em cartao subiram 18% em relacao ao mes passado.",
+      title: "Cartão fecha em 5 dias",
+      description: "Gastos em cartão subiram 18% em relação ao mês passado.",
       priority: "high",
       href: "/dashboard/financas/dividas",
     },
@@ -378,7 +379,7 @@ const dashboardBase: DashboardData = {
       id: "alert-school",
       title: "Semana escolar intensa",
       description:
-        "Uniforme especial, reuniao pedagogica e material complementar.",
+        "Uniforme especial, reunião pedagógica e material complementar.",
       priority: "medium",
       href: "/dashboard/agenda",
     },
@@ -428,7 +429,7 @@ const scenarioAccess: Record<string, AccessState> = {
     status: "EXPIRED",
     hasAccess: false,
     blockedReason:
-      "O periodo gratis terminou. Seus dados continuam salvos para retomada quando quiser.",
+      "O período grátis terminou. Seus dados continuam salvos para retomada quando quiser.",
     trialEndsAt: "2026-03-09T23:59:59.000Z",
   },
   past_due: {
@@ -436,7 +437,7 @@ const scenarioAccess: Record<string, AccessState> = {
     status: "PAST_DUE",
     hasAccess: true,
     blockedReason:
-      "Existe uma cobranca em aberto. O acesso segue liberado temporariamente para evitar ruptura.",
+      "Existe uma cobrança em aberto. O acesso segue liberado temporariamente para evitar ruptura.",
   },
 };
 
@@ -456,13 +457,13 @@ export function getDemoWorkspace(
       ? {
           status: "ACTIVE",
           planCode: "FAMILY_AI",
-          planName: "Mensal Familia IA",
+          planName: "Mensal Família IA",
           currentPeriodEnd: "2026-04-10T12:00:00.000Z",
-          renewalLabel: "Renovacao automatica em 10 de abril",
+          renewalLabel: "Renovação automática em 10 de abril",
           history: [
             {
               id: "bill-active-1",
-              label: "Assinatura Familia IA",
+              label: "Assinatura Família IA",
               amount: 39.9,
               status: "ACTIVE",
               createdAt: "2026-03-10T12:00:00.000Z",
@@ -484,13 +485,13 @@ export function getDemoWorkspace(
         ? {
             status: "PAST_DUE",
             planCode: "FAMILY",
-            planName: "Mensal Familia",
+            planName: "Mensal Família",
             currentPeriodEnd: "2026-03-12T12:00:00.000Z",
-            renewalLabel: "Pagamento pendente desde 12 de marco",
+            renewalLabel: "Pagamento pendente desde 12 de março",
             history: [
               {
                 id: "bill-past-due",
-                label: "Tentativa de renovacao",
+                label: "Tentativa de renovação",
                 amount: 29.9,
                 status: "PAST_DUE",
                 createdAt: "2026-03-12T12:00:00.000Z",
@@ -509,15 +510,15 @@ export function getDemoWorkspace(
         : {
             status: access.status,
             planCode: "TRIAL",
-            planName: "Trial gratis 7 dias",
+            planName: "Trial grátis 7 dias",
             trialEndsAt:
               scenario === "expired"
                 ? "2026-03-09T23:59:59.000Z"
                 : "2026-03-17T23:59:59.000Z",
             renewalLabel:
               scenario === "expired"
-                ? "Trial encerrado em 9 de marco"
-                : "Trial expira em 17 de marco",
+                ? "Trial encerrado em 9 de março"
+                : "Trial expira em 17 de março",
             history: billingHistoryBase,
             featureCodes: [
               "dashboard",
@@ -541,5 +542,177 @@ export function getDemoWorkspace(
     children: baseChildren,
     health: baseHealth,
     billing,
+  };
+}
+
+function getFirstName(fullName?: string) {
+  return fullName?.trim().split(/\s+/)[0] || "Família";
+}
+
+function getMonthLabel() {
+  const formatted = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+export function createBlankWorkspace(
+  user?: Partial<SessionUser>,
+  scenario: keyof typeof scenarioAccess = "trialing",
+): HouseholdWorkspace {
+  const access = getDemoAccessState(scenario);
+  const fullName = user?.fullName?.trim() || "Nova família";
+  const firstName = getFirstName(fullName);
+
+  const summary = {
+    income: 0,
+    expense: 0,
+    balance: 0,
+    forecast: 0,
+    fixedCostRatio: 0,
+  };
+
+  return {
+    dashboard: {
+      greetingName: firstName,
+      householdName: `Casa de ${firstName}`,
+      monthLabel: getMonthLabel(),
+      metrics: [
+        {
+          id: "metric-balance",
+          label: "Saldo do mês",
+          value: "R$ 0,00",
+          helper: "Preencha entradas e saídas para liberar a leitura do mês.",
+          trend: "neutral",
+        },
+        {
+          id: "metric-events",
+          label: "Eventos nos próximos 7 dias",
+          value: "0",
+          helper: "Agenda vazia por enquanto.",
+          trend: "neutral",
+        },
+        {
+          id: "metric-tasks",
+          label: "Tarefas pendentes",
+          value: "0",
+          helper: "Nenhuma tarefa cadastrada ainda.",
+          trend: "neutral",
+        },
+        {
+          id: "metric-shopping",
+          label: "Compras em aberto",
+          value: "R$ 0,00",
+          helper: "Nenhuma lista de compras ativa.",
+          trend: "neutral",
+        },
+      ],
+      alerts: [],
+      upcomingEvents: [],
+      nextSevenDays: [],
+      pendingTasks: [],
+      shoppingLists: [],
+      insights: [
+        {
+          id: "insight-blank-start",
+          title: "Comece pelo básico",
+          content:
+            "Preencha primeiro renda, moradia, energia, internet e dívidas negociáveis para o painel ficar útil já no primeiro uso.",
+          tone: "Primeiros passos",
+          kind: "ideas",
+          disclaimer:
+            "Sugestão educativa. Ajuste com sua realidade antes de decidir.",
+        },
+      ],
+      children: [],
+      healthReminders: [],
+      finance: summary,
+    },
+    finance: {
+      summary,
+      entries: [],
+      categoryBreakdown: [],
+      monthlyFlow: [],
+    },
+    events: [],
+    tasks: [],
+    shoppingLists: [],
+    insights: [
+      {
+        id: "insight-blank-finance",
+        title: "Estruture renda e contas fixas",
+        content:
+          "Quando a renda e as despesas essenciais entram primeiro, sobra menos espaço para surpresas no resto do mês.",
+        tone: "Base",
+        kind: "financial",
+        disclaimer: "Insight educativo. Não representa consultoria financeira.",
+      },
+    ],
+    children: [],
+    health: [],
+    billing:
+      scenario === "active"
+        ? {
+            status: "ACTIVE",
+            planCode: "FAMILY",
+            planName: "Mensal Família",
+            currentPeriodEnd: "2026-04-10T12:00:00.000Z",
+            renewalLabel: "Renovação automática em 10 de abril",
+            history: [],
+            featureCodes: [
+              "dashboard",
+              "finance",
+              "calendar",
+              "tasks",
+              "shopping",
+              "children",
+              "health",
+              "ai",
+            ],
+          }
+        : scenario === "past_due"
+          ? {
+              status: "PAST_DUE",
+              planCode: "FAMILY",
+              planName: "Mensal Família",
+              currentPeriodEnd: "2026-03-12T12:00:00.000Z",
+              renewalLabel: "Pagamento pendente desde 12 de março",
+              history: [],
+              featureCodes: [
+                "dashboard",
+                "finance",
+                "calendar",
+                "tasks",
+                "shopping",
+                "children",
+                "health",
+              ],
+            }
+          : {
+              status: access.status,
+              planCode: "TRIAL",
+              planName: "Trial grátis 7 dias",
+              trialEndsAt:
+                scenario === "expired"
+                  ? "2026-03-09T23:59:59.000Z"
+                  : "2026-03-17T23:59:59.000Z",
+              renewalLabel:
+                scenario === "expired"
+                  ? "Trial encerrado em 9 de março"
+                  : "Trial expira em 17 de março",
+              history: [],
+              featureCodes: [
+                "dashboard",
+                "finance",
+                "calendar",
+                "tasks",
+                "shopping",
+                "children",
+                "health",
+                "ai",
+              ],
+            },
   };
 }

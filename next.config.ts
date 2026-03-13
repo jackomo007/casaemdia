@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+import { getSecurityHeaders } from "./src/lib/security";
+
 const nextConfig: NextConfig = {
   typedRoutes: true,
   allowedDevOrigins: ["127.0.0.1"],
@@ -12,6 +14,10 @@ const nextConfig: NextConfig = {
     ],
   },
   headers: async () => [
+    {
+      source: "/:path*",
+      headers: getSecurityHeaders(),
+    },
     {
       source: "/sw.js",
       headers: [

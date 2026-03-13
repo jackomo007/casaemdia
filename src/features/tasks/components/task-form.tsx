@@ -46,7 +46,7 @@ export function TaskForm() {
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
       <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="task-title">Titulo</Label>
+        <Label htmlFor="task-title">Título</Label>
         <Input
           id="task-title"
           {...form.register("title")}
@@ -54,7 +54,7 @@ export function TaskForm() {
         />
       </div>
       <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="task-description">Descricao</Label>
+        <Label htmlFor="task-description">Descrição</Label>
         <Input
           id="task-description"
           {...form.register("description")}
@@ -83,13 +83,13 @@ export function TaskForm() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="low">Baixa</SelectItem>
-            <SelectItem value="medium">Media</SelectItem>
+            <SelectItem value="medium">Média</SelectItem>
             <SelectItem value="high">Alta</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="task-assignee">Responsavel</Label>
+        <Label htmlFor="task-assignee">Responsável</Label>
         <Input
           id="task-assignee"
           {...form.register("assignee")}

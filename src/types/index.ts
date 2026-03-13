@@ -1,4 +1,5 @@
 export type DemoScenario = "trialing" | "active" | "expired" | "past_due";
+export type WorkspacePreset = "sample" | "blank";
 
 export type BillingStatus =
   | "TRIALING"
@@ -195,6 +196,11 @@ export interface AccessState {
   hasAccess: boolean;
   blockedReason?: string;
   trialEndsAt?: string;
+}
+
+export interface SessionUser {
+  fullName: string;
+  email: string;
 }
 
 export interface DashboardData {

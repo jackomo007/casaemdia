@@ -7,8 +7,8 @@ export function PostTrialLock() {
   return (
     <div className="space-y-6">
       <LockedFeatureOverlay
-        title="Seu periodo gratis terminou"
-        description="Os dados da familia continuam preservados. Escolha um plano para voltar exatamente de onde parou."
+        title="Seu período grátis terminou"
+        description="Os dados da família continuam preservados. Escolha um plano para voltar exatamente de onde parou."
       />
       <div className="flex justify-center">
         <Button asChild variant="outline" className="rounded-2xl">

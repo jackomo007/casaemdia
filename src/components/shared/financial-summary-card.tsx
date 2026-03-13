@@ -15,7 +15,7 @@ export function FinancialSummaryCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-slate-500">
-              Situacao financeira
+              Situação financeira
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
               {formatCurrency(summary.balance)}
@@ -38,7 +38,7 @@ export function FinancialSummaryCard({
           <div className="rounded-3xl bg-white p-4">
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <ArrowDownCircle className="h-4 w-4 text-rose-500" />
-              Saidas
+              Saídas
             </div>
             <p className="mt-2 text-lg font-semibold text-slate-950">
               {formatCurrency(summary.expense)}

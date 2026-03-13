@@ -1,4 +1,7 @@
-import { financeEntrySchema } from "@/lib/validations/finance";
+import {
+  financeEntrySchema,
+  financeSheetSchema,
+} from "@/lib/validations/finance";
 
 describe("financeEntrySchema", () => {
   it("aceita um lancamento valido", () => {
@@ -29,5 +32,32 @@ describe("financeEntrySchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("aceita varias linhas preenchidas na planilha rapida", () => {
+    const result = financeSheetSchema.safeParse([
+      {
+        title: "Aluguel",
+        amount: 2400,
+        kind: "expense",
+        category: "Essencial",
+        member: "Casa",
+        dueDate: "2026-03-10",
+        competenceDate: "2026-03-01",
+        account: "Planejamento essencial",
+      },
+      {
+        title: "CLT principal",
+        amount: 7100,
+        kind: "income",
+        category: "CLT",
+        member: "Responsavel",
+        dueDate: "2026-03-05",
+        competenceDate: "2026-03-01",
+        account: "Conta principal",
+      },
+    ]);
+
+    expect(result.success).toBe(true);
   });
 });

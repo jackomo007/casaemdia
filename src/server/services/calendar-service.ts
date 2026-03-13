@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getSessionScenario } from "@/lib/auth/session";
+import { getWorkspaceSession } from "@/lib/auth/session";
 import {
   addCalendarEvent,
   getWorkspaceSnapshot,
@@ -8,11 +8,11 @@ import {
 import type { CreateCalendarEventInput } from "@/types";
 
 export async function getCalendarEvents() {
-  const scenario = await getSessionScenario();
-  return getWorkspaceSnapshot(scenario).events;
+  const session = await getWorkspaceSession();
+  return getWorkspaceSnapshot(session).events;
 }
 
 export async function createCalendarEvent(input: CreateCalendarEventInput) {
-  const scenario = await getSessionScenario();
-  return addCalendarEvent(scenario, input).events;
+  const session = await getWorkspaceSession();
+  return addCalendarEvent(session, input).events;
 }

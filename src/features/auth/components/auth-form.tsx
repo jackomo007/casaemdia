@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { type Resolver, useForm } from "react-hook-form";
+import { type Resolver, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -37,21 +37,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const schema = mode === "login" ? loginSchema : registerSchema;
+  const isLogin = mode === "login";
   const form = useForm<AuthFormValues>({
     resolver: zodResolver(schema) as Resolver<AuthFormValues>,
-    defaultValues:
-      mode === "login"
-        ? {
-            email: "marina@familiaoliveira.com.br",
-            password: "123456",
-            scenario: "trialing",
-          }
-        : {
-            fullName: "Marina Oliveira",
-            email: "marina@familiaoliveira.com.br",
-            password: "123456",
-            scenario: "trialing",
-          },
+    defaultValues: {
+      fullName: "",
+      email: "",
+      password: "",
+      scenario: "trialing",
+    },
+  });
+  const selectedScenario = useWatch({
+    control: form.control,
+    name: "scenario",
   });
 
   const onSubmit = form.handleSubmit((values) => {
@@ -60,7 +58,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       const result = await action(values);
 
       if (!result.success) {
-        toast.error(result.message ?? "Nao foi possivel continuar.");
+        toast.error(result.message ?? "Não foi possível continuar.");
         return;
       }
 
@@ -71,7 +69,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
         return;
       }
       router.push(
-        result.redirectTo as "/dashboard" | "/onboarding" | "/billing/locked",
+        result.redirectTo as
+          | "/dashboard"
+          | "/dashboard/financas"
+          | "/onboarding"
+          | "/billing/locked",
       );
       router.refresh();
     });
@@ -82,16 +84,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
       <CardContent className="p-6 md:p-8">
         <div className="mb-8 space-y-3">
           <span className="bg-primary/10 text-primary inline-flex rounded-full px-3 py-1 text-xs font-semibold tracking-[0.2em] uppercase">
-            {mode === "login" ? "Entrar" : "Criar conta"}
+            {isLogin ? "Entrar" : "Criar conta"}
           </span>
           <h1 className="font-display text-3xl font-semibold text-slate-950">
-            {mode === "login"
-              ? "Acesse sua familia"
-              : "Comece o trial de 7 dias"}
+            {isLogin ? "Acesse sua família" : "Comece com tudo em branco"}
           </h1>
           <p className="text-sm leading-6 text-slate-500">
-            Sem cartao para iniciar. Em modo demo, voce pode testar tambem
-            cenarios de assinatura.
+            Sem cartão para iniciar. Crie sua conta e comece com a base vazia
+            para preencher do seu jeito.
           </p>
         </div>
         <form className="space-y-5" onSubmit={onSubmit}>
@@ -102,6 +102,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 id="fullName"
                 {...form.register("fullName")}
                 className="rounded-2xl"
+                placeholder="Seu nome"
+                autoComplete="name"
               />
               <p className="text-xs text-rose-500">
                 {form.formState.errors.fullName?.message}
@@ -115,6 +117,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
               id="email"
               {...form.register("email")}
               className="rounded-2xl"
+              placeholder="voce@exemplo.com"
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
             />
             <p className="text-xs text-rose-500">
               {form.formState.errors.email?.message}
@@ -128,6 +135,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
               type="password"
               {...form.register("password")}
               className="rounded-2xl"
+              placeholder={
+                isLogin
+                  ? "Digite sua senha"
+                  : "Mínimo de 8 caracteres com letra e número"
+              }
+              autoComplete={isLogin ? "current-password" : "new-password"}
             />
             <p className="text-xs text-rose-500">
               {form.formState.errors.password?.message}
@@ -135,9 +148,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </div>
 
           <div className="space-y-2">
-            <Label>Cenario demo</Label>
+            <Label>Cenário de acesso</Label>
             <Select
-              defaultValue={form.getValues("scenario")}
+              value={selectedScenario}
               onValueChange={(value) =>
                 form.setValue("scenario", value as LoginSchema["scenario"])
               }
@@ -159,15 +172,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
             disabled={isPending}
             className="h-12 w-full rounded-2xl"
           >
-            {isPending
-              ? "Processando..."
-              : mode === "login"
-                ? "Entrar"
-                : "Criar conta"}
+            {isPending ? "Processando..." : isLogin ? "Entrar" : "Criar conta"}
           </Button>
         </form>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
-          {mode === "login" ? (
+          {isLogin ? (
             <>
               <Link href="/register" className="text-primary font-medium">
                 Criar uma conta
@@ -181,7 +190,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             </>
           ) : (
             <Link href="/login" className="text-primary font-medium">
-              Ja tenho conta
+              Já tenho conta
             </Link>
           )}
         </div>
