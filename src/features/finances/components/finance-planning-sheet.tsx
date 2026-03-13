@@ -1,6 +1,13 @@
 "use client";
 
-import { CircleDollarSign, HandCoins, House, ShieldAlert } from "lucide-react";
+import {
+  CircleDollarSign,
+  HandCoins,
+  House,
+  Plus,
+  ShieldAlert,
+  Trash2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useState, useTransition } from "react";
@@ -33,140 +40,178 @@ type PlanningRow = {
   incomeType?: IncomeType;
 };
 
-function getMonthStart() {
-  const now = new Date();
+function clampDay(year: number, monthIndex: number, day: number) {
+  const lastDayOfMonth = new Date(year, monthIndex + 1, 0).getDate();
+  return Math.min(day, lastDayOfMonth);
+}
+
+function getMonthStart(referenceDate: string) {
+  const now = new Date(referenceDate);
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
-function getMonthDate(day: number) {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+function getMonthDate(referenceDate: string, day: number) {
+  const now = new Date(referenceDate);
+  const monthIndex = now.getMonth();
+  const normalizedDay = clampDay(now.getFullYear(), monthIndex, day);
+
+  return `${now.getFullYear()}-${String(monthIndex + 1).padStart(2, "0")}-${String(normalizedDay).padStart(2, "0")}`;
 }
 
-const fixedRowsTemplate: PlanningRow[] = [
-  {
-    id: "fixed-rent",
-    label: "Aluguel",
-    amount: "",
-    dueDate: getMonthDate(10),
-    section: "fixed",
-  },
-  {
-    id: "fixed-water",
-    label: "Água",
-    amount: "",
-    dueDate: getMonthDate(12),
-    section: "fixed",
-  },
-  {
-    id: "fixed-phone",
-    label: "Plano de telefones",
-    amount: "",
-    dueDate: getMonthDate(15),
-    section: "fixed",
-  },
-  {
-    id: "fixed-energy",
-    label: "Energia",
-    amount: "",
-    dueDate: getMonthDate(18),
-    section: "fixed",
-  },
-  {
-    id: "fixed-internet",
-    label: "Internet",
-    amount: "",
-    dueDate: getMonthDate(20),
-    section: "fixed",
-  },
-  {
-    id: "fixed-essential",
-    label: "Outro essencial",
-    amount: "",
-    dueDate: getMonthDate(25),
-    section: "fixed",
-  },
-];
+function createRowId(section: PlanningSection) {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return `${section}-${crypto.randomUUID()}`;
+  }
 
-const negotiableRowsTemplate: PlanningRow[] = [
-  {
-    id: "neg-credit-card",
-    label: "Cartão de crédito",
-    amount: "",
-    dueDate: getMonthDate(15),
-    section: "negotiable",
-  },
-  {
-    id: "neg-loan",
-    label: "Empréstimo",
-    amount: "",
-    dueDate: getMonthDate(20),
-    section: "negotiable",
-  },
-  {
-    id: "neg-installment",
-    label: "Parcelamento / carne",
-    amount: "",
-    dueDate: getMonthDate(22),
-    section: "negotiable",
-  },
-  {
-    id: "neg-tax",
-    label: "Imposto / atraso",
-    amount: "",
-    dueDate: getMonthDate(25),
-    section: "negotiable",
-  },
-  {
-    id: "neg-limit",
-    label: "Cheque especial / limite",
-    amount: "",
-    dueDate: getMonthDate(28),
-    section: "negotiable",
-  },
-  {
-    id: "neg-other",
-    label: "Outra dívida negociável",
-    amount: "",
-    dueDate: getMonthDate(30),
-    section: "negotiable",
-  },
-];
+  return `${section}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
-const incomeRowsTemplate: PlanningRow[] = [
-  {
-    id: "income-clt-main",
-    label: "Renda principal",
+function createPlanningRow(
+  section: PlanningSection,
+  referenceDate: string,
+): PlanningRow {
+  if (section === "income") {
+    return {
+      id: createRowId(section),
+      label: "",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 20),
+      section,
+      incomeType: "Extra",
+    };
+  }
+
+  return {
+    id: createRowId(section),
+    label: "",
     amount: "",
-    dueDate: getMonthDate(5),
-    section: "income",
-    incomeType: "CLT",
-  },
-  {
-    id: "income-clt-extra",
-    label: "Benefício / auxílio",
-    amount: "",
-    dueDate: getMonthDate(7),
-    section: "income",
-    incomeType: "CLT",
-  },
-  {
-    id: "income-pj",
-    label: "Projeto PJ",
-    amount: "",
-    dueDate: getMonthDate(15),
-    section: "income",
-    incomeType: "PJ",
-  },
-  {
-    id: "income-extra",
-    label: "Renda extra",
-    amount: "",
-    dueDate: getMonthDate(20),
-    section: "income",
-    incomeType: "Extra",
-  },
-];
+    dueDate:
+      section === "fixed"
+        ? getMonthDate(referenceDate, 25)
+        : getMonthDate(referenceDate, 28),
+    section,
+  };
+}
+
+function createFixedRowsTemplate(referenceDate: string): PlanningRow[] {
+  return [
+    {
+      id: "fixed-rent",
+      label: "Aluguel",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 10),
+      section: "fixed",
+    },
+    {
+      id: "fixed-water",
+      label: "Água",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 12),
+      section: "fixed",
+    },
+    {
+      id: "fixed-phone",
+      label: "Plano de telefones",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 15),
+      section: "fixed",
+    },
+    {
+      id: "fixed-energy",
+      label: "Energia",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 18),
+      section: "fixed",
+    },
+    {
+      id: "fixed-internet",
+      label: "Internet",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 20),
+      section: "fixed",
+    },
+  ];
+}
+
+function createNegotiableRowsTemplate(referenceDate: string): PlanningRow[] {
+  return [
+    {
+      id: "neg-credit-card",
+      label: "Cartão de crédito",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 15),
+      section: "negotiable",
+    },
+    {
+      id: "neg-loan",
+      label: "Empréstimo",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 20),
+      section: "negotiable",
+    },
+    {
+      id: "neg-installment",
+      label: "Parcelamento / carne",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 22),
+      section: "negotiable",
+    },
+    {
+      id: "neg-tax",
+      label: "Imposto / atraso",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 25),
+      section: "negotiable",
+    },
+    {
+      id: "neg-limit",
+      label: "Cheque especial / limite",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 28),
+      section: "negotiable",
+    },
+  ];
+}
+
+function createIncomeRowsTemplate(referenceDate: string): PlanningRow[] {
+  return [
+    {
+      id: "income-clt-main",
+      label: "Renda principal",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 5),
+      section: "income",
+      incomeType: "CLT",
+    },
+    {
+      id: "income-clt-extra",
+      label: "Benefício / auxílio",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 7),
+      section: "income",
+      incomeType: "CLT",
+    },
+    {
+      id: "income-pj",
+      label: "Projeto PJ",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 15),
+      section: "income",
+      incomeType: "PJ",
+    },
+    {
+      id: "income-extra",
+      label: "Renda extra",
+      amount: "",
+      dueDate: getMonthDate(referenceDate, 20),
+      section: "income",
+      incomeType: "Extra",
+    },
+  ];
+}
 
 function parseAmount(value: string) {
   const normalized = value.replace(",", ".").trim();
@@ -182,8 +227,8 @@ function getRowTotal(rows: PlanningRow[]) {
   return rows.reduce((total, row) => total + parseAmount(row.amount), 0);
 }
 
-function buildEntries(rows: PlanningRow[]) {
-  const competenceDate = getMonthStart();
+function buildEntries(rows: PlanningRow[], referenceDate: string) {
+  const competenceDate = getMonthStart(referenceDate);
 
   return rows
     .filter((row) => parseAmount(row.amount) > 0)
@@ -264,6 +309,9 @@ function PlanningTable({
   badge,
   icon,
   rows,
+  addButtonLabel,
+  onAddRow,
+  onRemoveRow,
   onChange,
   incomeMode = false,
 }: {
@@ -272,6 +320,9 @@ function PlanningTable({
   badge: string;
   icon: ReactNode;
   rows: PlanningRow[];
+  addButtonLabel: string;
+  onAddRow: () => void;
+  onRemoveRow: (id: string) => void;
   onChange: (
     id: string,
     key: "label" | "amount" | "dueDate" | "incomeType",
@@ -298,19 +349,37 @@ function PlanningTable({
         </div>
 
         <div className="space-y-3">
+          {rows.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-6 text-sm text-slate-500">
+              Nenhuma linha nesta seção. Use o botão abaixo para adicionar.
+            </div>
+          ) : null}
           {rows.map((row, index) => (
             <div
               key={row.id}
               className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-3"
             >
-              <Input
-                aria-label={`${title} nome ${index + 1}`}
-                value={row.label}
-                onChange={(event) =>
-                  onChange(row.id, "label", event.target.value)
-                }
-                className="rounded-2xl border-white bg-white"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  aria-label={`${title} nome ${index + 1}`}
+                  value={row.label}
+                  onChange={(event) =>
+                    onChange(row.id, "label", event.target.value)
+                  }
+                  placeholder="Descreva esta linha"
+                  className="rounded-2xl border-white bg-white"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label={`Remover ${title} ${index + 1}`}
+                  className="shrink-0 rounded-2xl border-white bg-white text-slate-500 hover:text-rose-600"
+                  onClick={() => onRemoveRow(row.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
               <div
                 className={
                   incomeMode
@@ -361,17 +430,37 @@ function PlanningTable({
             </div>
           ))}
         </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full rounded-2xl border-dashed"
+          onClick={onAddRow}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          {addButtonLabel}
+        </Button>
       </CardContent>
     </Card>
   );
 }
 
-export function FinancePlanningSheet() {
+export function FinancePlanningSheet({
+  referenceDate,
+}: {
+  referenceDate: string;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [fixedRows, setFixedRows] = useState(fixedRowsTemplate);
-  const [negotiableRows, setNegotiableRows] = useState(negotiableRowsTemplate);
-  const [incomeRows, setIncomeRows] = useState(incomeRowsTemplate);
+  const [fixedRows, setFixedRows] = useState(() =>
+    createFixedRowsTemplate(referenceDate),
+  );
+  const [negotiableRows, setNegotiableRows] = useState(() =>
+    createNegotiableRowsTemplate(referenceDate),
+  );
+  const [incomeRows, setIncomeRows] = useState(() =>
+    createIncomeRowsTemplate(referenceDate),
+  );
 
   const totalFixed = getRowTotal(fixedRows);
   const totalNegotiable = getRowTotal(negotiableRows);
@@ -404,17 +493,33 @@ export function FinancePlanningSheet() {
   }
 
   function resetSheet() {
-    setFixedRows(fixedRowsTemplate);
-    setNegotiableRows(negotiableRowsTemplate);
-    setIncomeRows(incomeRowsTemplate);
+    setFixedRows(createFixedRowsTemplate(referenceDate));
+    setNegotiableRows(createNegotiableRowsTemplate(referenceDate));
+    setIncomeRows(createIncomeRowsTemplate(referenceDate));
+  }
+
+  function addRow(
+    setter: Dispatch<SetStateAction<PlanningRow[]>>,
+    section: PlanningSection,
+  ) {
+    setter((currentRows) => [
+      ...currentRows,
+      createPlanningRow(section, referenceDate),
+    ]);
+  }
+
+  function removeRow(
+    setter: Dispatch<SetStateAction<PlanningRow[]>>,
+    id: string,
+  ) {
+    setter((currentRows) => currentRows.filter((row) => row.id !== id));
   }
 
   function handleSave() {
-    const entries = buildEntries([
-      ...fixedRows,
-      ...negotiableRows,
-      ...incomeRows,
-    ]);
+    const entries = buildEntries(
+      [...fixedRows, ...negotiableRows, ...incomeRows],
+      referenceDate,
+    );
 
     if (!entries.length) {
       toast.error("Preencha ao menos uma linha com valor maior que zero.");
@@ -476,6 +581,9 @@ export function FinancePlanningSheet() {
           badge="Essencial"
           icon={<House className="h-5 w-5" />}
           rows={fixedRows}
+          addButtonLabel="Adicionar custo essencial"
+          onAddRow={() => addRow(setFixedRows, "fixed")}
+          onRemoveRow={(id) => removeRow(setFixedRows, id)}
           onChange={(id, key, value) =>
             updateRows(setFixedRows, id, key, value)
           }
@@ -486,6 +594,9 @@ export function FinancePlanningSheet() {
           badge="Renegociável"
           icon={<HandCoins className="h-5 w-5" />}
           rows={negotiableRows}
+          addButtonLabel="Adicionar gasto negociável"
+          onAddRow={() => addRow(setNegotiableRows, "negotiable")}
+          onRemoveRow={(id) => removeRow(setNegotiableRows, id)}
           onChange={(id, key, value) =>
             updateRows(setNegotiableRows, id, key, value)
           }
@@ -496,6 +607,9 @@ export function FinancePlanningSheet() {
           badge="Receita"
           icon={<CircleDollarSign className="h-5 w-5" />}
           rows={incomeRows}
+          addButtonLabel="Adicionar entrada"
+          onAddRow={() => addRow(setIncomeRows, "income")}
+          onRemoveRow={(id) => removeRow(setIncomeRows, id)}
           onChange={(id, key, value) =>
             updateRows(setIncomeRows, id, key, value)
           }

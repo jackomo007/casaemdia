@@ -33,7 +33,13 @@ function formatMonthLabel(monthKey: string) {
   }).format(date);
 }
 
-export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
+export function FinanceOverview({
+  data,
+  referenceDate,
+}: {
+  data: FinanceOverviewData;
+  referenceDate: string;
+}) {
   const monthOptions = Array.from(
     new Set(
       data.entries.map((entry) =>
@@ -82,7 +88,7 @@ export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
         </Select>
       </div>
 
-      <FinancePlanningSheet />
+      <FinancePlanningSheet referenceDate={referenceDate} />
 
       <Card className="border-border/70 rounded-[32px] bg-white/85">
         <CardContent className="space-y-5 p-6">

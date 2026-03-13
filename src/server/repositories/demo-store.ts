@@ -55,6 +55,48 @@ function getWorkspace(context: DemoStoreContext): HouseholdWorkspace {
   return workspace;
 }
 
+function getFinanceMonthLabel(value: string) {
+  const formatted = new Intl.DateTimeFormat("pt-BR", {
+    month: "short",
+  }).format(new Date(value));
+
+  const normalized = formatted.replace(".", "");
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1, 3);
+}
+
+function upsertMonthlyFlowEntry(
+  workspace: HouseholdWorkspace,
+  input: CreateFinanceEntryInput,
+) {
+  const monthLabel = getFinanceMonthLabel(
+    input.competenceDate || input.dueDate,
+  );
+  const existingPoint = workspace.finance.monthlyFlow.find(
+    (point) => point.label === monthLabel,
+  );
+
+  if (existingPoint) {
+    if (input.kind === "expense") {
+      existingPoint.expense += input.amount;
+    } else {
+      existingPoint.income += input.amount;
+    }
+
+    existingPoint.balance = existingPoint.income - existingPoint.expense;
+    return;
+  }
+
+  workspace.finance.monthlyFlow = [
+    ...workspace.finance.monthlyFlow,
+    {
+      label: monthLabel,
+      income: input.kind === "income" ? input.amount : 0,
+      expense: input.kind === "expense" ? input.amount : 0,
+      balance: input.kind === "income" ? input.amount : -input.amount,
+    },
+  ];
+}
+
 export function getWorkspaceSnapshot(
   context: DemoStoreContext,
 ): HouseholdWorkspace {
@@ -92,6 +134,7 @@ export function addFinanceEntry(
   workspace.finance.summary.balance =
     workspace.finance.summary.income - workspace.finance.summary.expense;
   workspace.dashboard.finance.balance = workspace.finance.summary.balance;
+  upsertMonthlyFlowEntry(workspace, input);
 
   return workspace;
 }
