@@ -1,0 +1,45 @@
+import { expect, test } from "@playwright/test";
+
+test("faz login e visualiza o dashboard", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page).toHaveURL(/dashboard/);
+  await expect(page.getByText("Bom te ver, Marina")).toBeVisible();
+});
+
+test("cria lancamento, evento e tarefa no modo demo", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  await page.goto("/dashboard/financas");
+  await page.getByLabel("Titulo").fill("Compra de frutas");
+  await page.getByLabel("Valor").fill("88.3");
+  await page.getByRole("button", { name: "Criar lancamento" }).click();
+  await expect(page.getByText("Compra de frutas")).toBeVisible();
+
+  await page.goto("/dashboard/agenda");
+  await page.getByLabel("Titulo").fill("Levar bolo para a escola");
+  await page.getByRole("button", { name: "Criar evento" }).click();
+  await expect(page.getByText("Levar bolo para a escola")).toBeVisible();
+
+  await page.goto("/dashboard/tarefas");
+  await page.getByLabel("Titulo").fill("Separar material de artes");
+  await page.getByRole("button", { name: "Criar tarefa" }).click();
+  await expect(page.getByText("Separar material de artes")).toBeVisible();
+});
+
+test("bloqueia o dashboard quando o trial expira e permite selecionar plano", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await page.getByRole("combobox").click();
+  await page.getByText("Trial expirado").click();
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  await expect(page).toHaveURL(/billing\/locked/);
+  await expect(page.getByText("Seu periodo gratis terminou")).toBeVisible();
+
+  await page.goto("/select-plan");
+  await page.getByRole("button", { name: "Escolher plano" }).nth(2).click();
+  await expect(page).toHaveURL(/billing\/success/);
+});

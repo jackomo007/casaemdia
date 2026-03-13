@@ -1,0 +1,123 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  calendarEventSchema,
+  type CalendarEventSchema,
+} from "@/lib/validations/calendar";
+import { createCalendarEventAction } from "@/server/actions/calendar-actions";
+
+export function CalendarEventForm() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const form = useForm<CalendarEventSchema>({
+    resolver: zodResolver(calendarEventSchema),
+    defaultValues: {
+      title: "Levar fruta para a escola",
+      description:
+        "Segunda-feira e dia de atividade coletiva com lanche compartilhado.",
+      startsAt: "2026-03-19T07:00",
+      kind: "school",
+      badge: "Escola",
+      childName: "Livia",
+    },
+  });
+
+  const onSubmit = form.handleSubmit((values) => {
+    startTransition(async () => {
+      await createCalendarEventAction(values);
+      toast.success("Evento adicionado.");
+      router.refresh();
+      form.reset();
+    });
+  });
+
+  return (
+    <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="event-title">Titulo</Label>
+        <Input
+          id="event-title"
+          {...form.register("title")}
+          className="rounded-2xl"
+        />
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="event-description">Descricao</Label>
+        <Input
+          id="event-description"
+          {...form.register("description")}
+          className="rounded-2xl"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="event-startsAt">Data e hora</Label>
+        <Input
+          id="event-startsAt"
+          type="datetime-local"
+          {...form.register("startsAt")}
+          className="rounded-2xl"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Tipo</Label>
+        <Select
+          defaultValue={form.getValues("kind")}
+          onValueChange={(value) =>
+            form.setValue("kind", value as CalendarEventSchema["kind"])
+          }
+        >
+          <SelectTrigger className="rounded-2xl">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="school">Escola</SelectItem>
+            <SelectItem value="medical">Saude</SelectItem>
+            <SelectItem value="billing">Financeiro</SelectItem>
+            <SelectItem value="family">Familia</SelectItem>
+            <SelectItem value="shopping">Compras</SelectItem>
+            <SelectItem value="task">Tarefa</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="event-badge">Badge</Label>
+        <Input
+          id="event-badge"
+          {...form.register("badge")}
+          className="rounded-2xl"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="event-childName">Crianca</Label>
+        <Input
+          id="event-childName"
+          {...form.register("childName")}
+          className="rounded-2xl"
+        />
+      </div>
+      <Button
+        type="submit"
+        disabled={isPending}
+        className="h-11 rounded-2xl md:col-span-2"
+      >
+        {isPending ? "Salvando..." : "Criar evento"}
+      </Button>
+    </form>
+  );
+}

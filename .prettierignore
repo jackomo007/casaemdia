@@ -1,0 +1,6 @@
+.next
+coverage
+node_modules
+playwright-report
+public/sw.js
+test-results
