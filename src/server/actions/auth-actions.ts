@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import {
   clearAuthFailures,
@@ -15,14 +16,36 @@ import {
   SESSION_USER_COOKIE,
   WORKSPACE_PRESET_COOKIE,
 } from "@/lib/constants/app";
+import { createSupabaseServerClient } from "@/lib/auth/supabase";
+import { isSupabaseConfigured } from "@/lib/auth/supabase-config";
 import {
-  createSupabaseServerClient,
-  isSupabaseConfigured,
-} from "@/lib/auth/supabase";
-import { isDemoModeEnabled, serializeSessionUser } from "@/lib/auth/session";
+  getSessionUser,
+  isDemoModeEnabled,
+  serializeSessionUser,
+} from "@/lib/auth/session";
 import { getSessionCookieOptions } from "@/lib/security";
 import { loginSchema, registerSchema } from "@/lib/validations/auth";
 import type { SessionUser, WorkspacePreset } from "@/types";
+import { recordAuditEvent } from "@/server/services/audit-service";
+import { provisionUserWorkspace } from "@/server/services/account-provisioning-service";
+
+const passwordResetRequestSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email("Informe um e-mail válido.")
+    .max(120, "Use no máximo 120 caracteres."),
+});
+
+function getAppUrl() {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+
+  if (!appUrl) {
+    return "http://localhost:3000";
+  }
+
+  return appUrl.endsWith("/") ? appUrl.slice(0, -1) : appUrl;
+}
 
 function setSessionCookies(
   cookieStore: Awaited<ReturnType<typeof cookies>>,
@@ -109,6 +132,16 @@ export async function signInAction(values: unknown) {
   }
 
   clearAuthFailures(rateLimit.key);
+  await recordAuditEvent({
+    email: sessionUser.email,
+    fullName: sessionUser.fullName,
+    action: "auth.sign_in",
+    entityType: "User",
+    metadata: {
+      scenario: payload.scenario,
+      workspacePreset,
+    },
+  });
 
   setSessionCookies(cookieStore, {
     ...sessionUser,
@@ -139,19 +172,43 @@ export async function signUpAction(values: unknown) {
 
   if (isSupabaseConfigured()) {
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: payload.email,
       password: payload.password,
       options: {
         data: {
           full_name: payload.fullName,
         },
+        emailRedirectTo: `${getAppUrl()}/login?confirmed=1`,
       },
     });
 
     if (error) {
       registerAuthFailure(rateLimit.key);
       return { success: false, message: "Não foi possível criar a conta." };
+    }
+
+    await provisionUserWorkspace({
+      email: payload.email,
+      fullName: payload.fullName,
+      supabaseUserId: data.user?.id,
+    });
+    await recordAuditEvent({
+      email: payload.email,
+      fullName: payload.fullName,
+      supabaseUserId: data.user?.id,
+      action: "auth.sign_up",
+      entityType: "User",
+      entityId: data.user?.id,
+      metadata: {
+        emailConfirmed: Boolean(data.session),
+      },
+    });
+
+    clearAuthFailures(rateLimit.key);
+
+    if (!data.session) {
+      return { success: true, redirectTo: "/login?checkEmail=1" };
     }
   } else {
     registerAuthFailure(rateLimit.key);
@@ -160,8 +217,6 @@ export async function signUpAction(values: unknown) {
       message: "Cadastro indisponível sem autenticação configurada.",
     };
   }
-
-  clearAuthFailures(rateLimit.key);
 
   setSessionCookies(cookieStore, {
     email: payload.email,
@@ -175,6 +230,17 @@ export async function signUpAction(values: unknown) {
 }
 
 export async function signOutAction() {
+  const sessionUser = await getSessionUser();
+
+  if (sessionUser) {
+    await recordAuditEvent({
+      email: sessionUser.email,
+      fullName: sessionUser.fullName,
+      action: "auth.sign_out",
+      entityType: "User",
+    });
+  }
+
   if (isSupabaseConfigured()) {
     const supabase = await createSupabaseServerClient();
     await supabase.auth.signOut();
@@ -186,4 +252,81 @@ export async function signOutAction() {
   cookieStore.delete(SESSION_USER_COOKIE);
   cookieStore.delete(WORKSPACE_PRESET_COOKIE);
   redirect("/login");
+}
+
+export async function requestPasswordResetAction(values: unknown) {
+  const payload = passwordResetRequestSchema.parse(values);
+  const rateLimit = await getAuthRateLimitState("password-reset");
+
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      message: `Muitas tentativas. Tente novamente em ${rateLimit.retryAfterSeconds}s.`,
+    };
+  }
+
+  if (!isSupabaseConfigured()) {
+    registerAuthFailure(rateLimit.key);
+    return {
+      success: false,
+      message: "Recuperação de senha indisponível sem Supabase configurado.",
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(payload.email, {
+    redirectTo: `${getAppUrl()}/reset-password`,
+  });
+
+  if (error) {
+    registerAuthFailure(rateLimit.key);
+    return {
+      success: false,
+      message: "Não foi possível iniciar a redefinição de senha.",
+    };
+  }
+
+  clearAuthFailures(rateLimit.key);
+
+  await recordAuditEvent({
+    email: payload.email,
+    action: "auth.password_reset_requested",
+    entityType: "User",
+  });
+
+  return {
+    success: true,
+    message:
+      "Se existir uma conta com esse e-mail, o link de redefinição foi enviado.",
+  };
+}
+
+export async function recordPasswordResetCompletedAction(values: unknown) {
+  const payload = z
+    .object({
+      email: z
+        .string()
+        .trim()
+        .email("Informe um e-mail válido.")
+        .max(120, "Use no máximo 120 caracteres."),
+      fullName: z.string().trim().max(80).optional(),
+      supabaseUserId: z.string().trim().max(128).optional(),
+    })
+    .parse(values);
+
+  await provisionUserWorkspace({
+    email: payload.email,
+    fullName: payload.fullName,
+    supabaseUserId: payload.supabaseUserId,
+  });
+  await recordAuditEvent({
+    email: payload.email,
+    fullName: payload.fullName,
+    supabaseUserId: payload.supabaseUserId,
+    action: "auth.password_reset_completed",
+    entityType: "User",
+    entityId: payload.supabaseUserId,
+  });
+
+  return { success: true };
 }

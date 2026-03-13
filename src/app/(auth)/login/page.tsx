@@ -1,6 +1,15 @@
 import { AuthForm } from "@/features/auth/components/auth-form";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const shouldShowCheckEmail = params.checkEmail === "1";
+  const shouldShowPasswordReset = params.reset === "1";
+  const shouldShowConfirmed = params.confirmed === "1";
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#fbf9ff,#f2f4fb)] px-4 py-8">
       <div className="grid w-full max-w-6xl gap-6 xl:grid-cols-[0.85fr_1.15fr]">
@@ -15,6 +24,21 @@ export default function LoginPage() {
             Entre para ver o dashboard, testar cenários de assinatura e navegar
             por finanças, agenda, filhos, saúde e insights.
           </p>
+          {shouldShowCheckEmail ? (
+            <div className="mt-6 rounded-3xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-6 text-sky-900">
+              Conta criada. Verifique seu e-mail para confirmar o acesso.
+            </div>
+          ) : null}
+          {shouldShowConfirmed ? (
+            <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
+              E-mail confirmado. Agora você já pode entrar.
+            </div>
+          ) : null}
+          {shouldShowPasswordReset ? (
+            <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
+              Senha redefinida com sucesso. Faça login com a nova senha.
+            </div>
+          ) : null}
         </div>
         <AuthForm mode="login" />
       </div>

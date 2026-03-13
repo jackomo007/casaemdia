@@ -16,12 +16,12 @@ const scenarioSchema = z
   .enum(["trialing", "active", "expired", "past_due"])
   .default("trialing");
 
-const loginPasswordSchema = z
+export const loginPasswordSchema = z
   .string()
   .min(6, "A senha precisa ter ao menos 6 caracteres.")
   .max(72, "A senha pode ter no máximo 72 caracteres.");
 
-const registerPasswordSchema = z
+export const registerPasswordSchema = z
   .string()
   .min(8, "A senha precisa ter ao menos 8 caracteres.")
   .max(72, "A senha pode ter no máximo 72 caracteres.")

@@ -39,7 +39,9 @@ async function getRequestFingerprint(scope: string) {
   return `${scope}:${forwardedFor || realIp || "unknown-ip"}:${userAgent}`;
 }
 
-export async function getAuthRateLimitState(scope: "login" | "signup") {
+export async function getAuthRateLimitState(
+  scope: "login" | "signup" | "password-reset",
+) {
   const now = Date.now();
   cleanup(now);
 
