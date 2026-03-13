@@ -1,45 +1,63 @@
+import "dotenv/config";
+
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, SubscriptionStatus } from "@prisma/client";
 
+import { createPgPool } from "../src/lib/db/pool";
 import { subscriptionPlans } from "../src/lib/constants/plans";
 
-const prisma = new PrismaClient();
+const connectionString =
+  process.env.DIRECT_URL ??
+  process.env.DATABASE_URL ??
+  "postgresql://postgres:postgres@localhost:5432/casaemdia?schema=public";
+
+const pool = createPgPool(connectionString);
+const adapter = new PrismaPg(pool);
+
+const prisma = new PrismaClient({
+  adapter,
+});
 
 async function main() {
-  await prisma.$transaction([
-    prisma.paymentAttempt.deleteMany(),
-    prisma.billingEvent.deleteMany(),
-    prisma.billingCustomer.deleteMany(),
-    prisma.trialAccess.deleteMany(),
-    prisma.subscription.deleteMany(),
-    prisma.subscriptionPlan.deleteMany(),
-    prisma.featureGate.deleteMany(),
-    prisma.usageSnapshot.deleteMany(),
-    prisma.notification.deleteMany(),
-    prisma.aIInsight.deleteMany(),
-    prisma.attachment.deleteMany(),
-    prisma.schoolReminder.deleteMany(),
-    prisma.vaccineReminder.deleteMany(),
-    prisma.healthRecord.deleteMany(),
-    prisma.shoppingListItem.deleteMany(),
-    prisma.shoppingList.deleteMany(),
-    prisma.taskAssignment.deleteMany(),
-    prisma.task.deleteMany(),
-    prisma.calendarEvent.deleteMany(),
-    prisma.billReminder.deleteMany(),
-    prisma.debtEntry.deleteMany(),
-    prisma.expenseEntry.deleteMany(),
-    prisma.incomeEntry.deleteMany(),
-    prisma.installmentPlan.deleteMany(),
-    prisma.financialAccount.deleteMany(),
-    prisma.category.deleteMany(),
-    prisma.childProfile.deleteMany(),
-    prisma.userPreference.deleteMany(),
-    prisma.userHouseholdRole.deleteMany(),
-    prisma.householdMember.deleteMany(),
-    prisma.auditLog.deleteMany(),
-    prisma.household.deleteMany(),
-    prisma.user.deleteMany(),
-  ]);
+  const cleanupOperations = [
+    () => prisma.paymentAttempt.deleteMany(),
+    () => prisma.billingEvent.deleteMany(),
+    () => prisma.billingCustomer.deleteMany(),
+    () => prisma.trialAccess.deleteMany(),
+    () => prisma.subscription.deleteMany(),
+    () => prisma.subscriptionPlan.deleteMany(),
+    () => prisma.featureGate.deleteMany(),
+    () => prisma.usageSnapshot.deleteMany(),
+    () => prisma.notification.deleteMany(),
+    () => prisma.aIInsight.deleteMany(),
+    () => prisma.attachment.deleteMany(),
+    () => prisma.schoolReminder.deleteMany(),
+    () => prisma.vaccineReminder.deleteMany(),
+    () => prisma.healthRecord.deleteMany(),
+    () => prisma.shoppingListItem.deleteMany(),
+    () => prisma.shoppingList.deleteMany(),
+    () => prisma.taskAssignment.deleteMany(),
+    () => prisma.task.deleteMany(),
+    () => prisma.calendarEvent.deleteMany(),
+    () => prisma.billReminder.deleteMany(),
+    () => prisma.debtEntry.deleteMany(),
+    () => prisma.expenseEntry.deleteMany(),
+    () => prisma.incomeEntry.deleteMany(),
+    () => prisma.installmentPlan.deleteMany(),
+    () => prisma.financialAccount.deleteMany(),
+    () => prisma.category.deleteMany(),
+    () => prisma.childProfile.deleteMany(),
+    () => prisma.userPreference.deleteMany(),
+    () => prisma.userHouseholdRole.deleteMany(),
+    () => prisma.householdMember.deleteMany(),
+    () => prisma.auditLog.deleteMany(),
+    () => prisma.household.deleteMany(),
+    () => prisma.user.deleteMany(),
+  ];
+
+  for (const operation of cleanupOperations) {
+    await operation();
+  }
 
   const [marina, rafael] = await Promise.all([
     prisma.user.create({
@@ -771,4 +789,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });
