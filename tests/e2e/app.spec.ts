@@ -32,19 +32,11 @@ test("cria lancamento, evento e tarefa no modo demo", async ({ page }) => {
   await expect(page.getByText("Separar material de artes")).toBeVisible();
 });
 
-test("bloqueia o dashboard quando o trial expira e permite selecionar plano", async ({
-  page,
-}) => {
-  await page.goto("/login");
-  await page.getByLabel("E-mail").fill("marina@familiaoliveira.com.br");
-  await page.getByLabel("Senha").fill("123456");
-  await page.getByRole("combobox").click();
-  await page.getByText("Trial expirado").click();
-  await page.getByRole("button", { name: "Entrar" }).click();
-
-  await expect(page).toHaveURL(/billing\/locked/);
-  await expect(page.getByText(/Seu período grátis terminou/i)).toBeVisible();
-
+test("abre a tela de bloqueio e permite selecionar plano", async ({ page }) => {
+  await page.goto("/billing/locked");
+  await expect(
+    page.getByText(/acesso está bloqueado|pagamento pendente/i),
+  ).toBeVisible();
   await page.goto("/select-plan");
   await page.getByRole("button", { name: "Escolher plano" }).nth(2).click();
   await expect(page).toHaveURL(/billing\/success/);

@@ -5,7 +5,6 @@ describe("auth validation", () => {
     const result = loginSchema.safeParse({
       email: "marina@familiaoliveira.com.br",
       password: "123456",
-      scenario: "trialing",
     });
 
     expect(result.success).toBe(true);
@@ -16,7 +15,6 @@ describe("auth validation", () => {
       fullName: "Nova Pessoa",
       email: "nova@exemplo.com",
       password: "12345678",
-      scenario: "trialing",
     });
 
     expect(result.success).toBe(false);
@@ -27,7 +25,6 @@ describe("auth validation", () => {
       fullName: "Nova Pessoa",
       email: "nova@exemplo.com",
       password: "Casa1234",
-      scenario: "trialing",
     });
 
     expect(result.success).toBe(true);

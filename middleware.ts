@@ -51,19 +51,10 @@ export function middleware(request: NextRequest) {
     return applySensitiveRouteHeaders(NextResponse.redirect(loginUrl));
   }
 
-  if (isPrivateRoute && !canAccess(scenario)) {
-    return applySensitiveRouteHeaders(
-      NextResponse.redirect(new URL("/billing/locked", request.url)),
-    );
-  }
-
   if (isPublicOnlyRoute && session) {
     return applySensitiveRouteHeaders(
       NextResponse.redirect(
-        new URL(
-          canAccess(scenario) ? "/dashboard" : "/billing/locked",
-          request.url,
-        ),
+        new URL(canAccess(scenario) ? "/dashboard" : "/dashboard", request.url),
       ),
     );
   }

@@ -4,25 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { type Resolver, useForm, useWatch } from "react-hook-form";
+import { type Resolver, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  loginSchema,
-  registerSchema,
-  type LoginSchema,
-} from "@/lib/validations/auth";
+import { loginSchema, registerSchema } from "@/lib/validations/auth";
 import { signInAction, signUpAction } from "@/server/actions/auth-actions";
 
 type Mode = "login" | "register";
@@ -30,7 +19,6 @@ type AuthFormValues = {
   fullName?: string;
   email: string;
   password: string;
-  scenario: LoginSchema["scenario"];
 };
 
 export function AuthForm({ mode }: { mode: Mode }) {
@@ -44,12 +32,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       fullName: "",
       email: "",
       password: "",
-      scenario: "trialing",
     },
-  });
-  const selectedScenario = useWatch({
-    control: form.control,
-    name: "scenario",
   });
 
   const onSubmit = form.handleSubmit((values) => {
@@ -145,26 +128,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
             <p className="text-xs text-rose-500">
               {form.formState.errors.password?.message}
             </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Cenário de acesso</Label>
-            <Select
-              value={selectedScenario}
-              onValueChange={(value) =>
-                form.setValue("scenario", value as LoginSchema["scenario"])
-              }
-            >
-              <SelectTrigger className="rounded-2xl">
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="trialing">Trial ativo</SelectItem>
-                <SelectItem value="active">Assinatura ativa</SelectItem>
-                <SelectItem value="past_due">Pagamento pendente</SelectItem>
-                <SelectItem value="expired">Trial expirado</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <Button

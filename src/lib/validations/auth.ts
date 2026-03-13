@@ -12,10 +12,6 @@ const emailSchema = z
   .email("Informe um e-mail válido.")
   .max(120, "Use no máximo 120 caracteres.");
 
-const scenarioSchema = z
-  .enum(["trialing", "active", "expired", "past_due"])
-  .default("trialing");
-
 export const loginPasswordSchema = z
   .string()
   .min(6, "A senha precisa ter ao menos 6 caracteres.")
@@ -31,14 +27,12 @@ export const registerPasswordSchema = z
 export const loginSchema = z.object({
   email: emailSchema,
   password: loginPasswordSchema,
-  scenario: scenarioSchema,
 });
 
 export const registerSchema = z.object({
   fullName: fullNameSchema,
   email: emailSchema,
   password: registerPasswordSchema,
-  scenario: scenarioSchema,
 });
 
 export type LoginSchema = z.infer<typeof loginSchema>;

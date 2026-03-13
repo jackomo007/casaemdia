@@ -19,6 +19,7 @@ import {
 import { createSupabaseServerClient } from "@/lib/auth/supabase";
 import { isSupabaseConfigured } from "@/lib/auth/supabase-config";
 import {
+  getAccessStateForEmail,
   getSessionUser,
   isDemoModeEnabled,
   serializeSessionUser,
@@ -74,6 +75,7 @@ function setSessionCookies(
 export async function signInAction(values: unknown) {
   const payload = loginSchema.parse(values);
   const rateLimit = await getAuthRateLimitState("login");
+  const normalizedEmail = payload.email.trim().toLowerCase();
 
   if (!rateLimit.allowed) {
     return {
@@ -84,22 +86,21 @@ export async function signInAction(values: unknown) {
 
   const cookieStore = await cookies();
   const isDemoCredentials =
-    payload.email === "marina@familiaoliveira.com.br" &&
+    normalizedEmail === "marina@familiaoliveira.com.br" &&
     payload.password === "123456";
+  const isMarinaDemo = normalizedEmail === "marina@familiaoliveira.com.br";
   let sessionUser: SessionUser = {
-    email: payload.email,
-    fullName:
-      payload.email === "marina@familiaoliveira.com.br"
-        ? "Marina Oliveira"
-        : (payload.email.split("@")[0] ?? "Responsavel"),
+    email: normalizedEmail,
+    fullName: isMarinaDemo
+      ? "Marina Oliveira"
+      : (normalizedEmail.split("@")[0] ?? "Responsavel"),
   };
-  let workspacePreset: WorkspacePreset =
-    payload.email === "marina@familiaoliveira.com.br" ? "sample" : "blank";
+  let workspacePreset: WorkspacePreset = isMarinaDemo ? "sample" : "blank";
 
   if (isSupabaseConfigured()) {
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: payload.email,
+      email: normalizedEmail,
       password: payload.password,
     });
 
@@ -114,14 +115,17 @@ export async function signInAction(values: unknown) {
 
     if (data.user) {
       sessionUser = {
-        email: data.user.email ?? payload.email,
+        email: data.user.email?.trim().toLowerCase() ?? normalizedEmail,
         fullName:
           typeof data.user.user_metadata.full_name === "string" &&
           data.user.user_metadata.full_name
             ? data.user.user_metadata.full_name
             : sessionUser.fullName,
       };
-      workspacePreset = "blank";
+      workspacePreset =
+        sessionUser.email === "marina@familiaoliveira.com.br"
+          ? "sample"
+          : "blank";
     }
   } else if (!isDemoModeEnabled() || !isDemoCredentials) {
     registerAuthFailure(rateLimit.key);
@@ -132,28 +136,28 @@ export async function signInAction(values: unknown) {
   }
 
   clearAuthFailures(rateLimit.key);
+  const accessState = await getAccessStateForEmail(sessionUser.email);
   await recordAuditEvent({
     email: sessionUser.email,
     fullName: sessionUser.fullName,
     action: "auth.sign_in",
     entityType: "User",
     metadata: {
-      scenario: payload.scenario,
+      scenario: accessState.scenario,
       workspacePreset,
     },
   });
 
   setSessionCookies(cookieStore, {
     ...sessionUser,
-    scenario: payload.scenario,
+    scenario: accessState.scenario,
     workspacePreset,
   });
 
   revalidatePath("/");
   return {
     success: true,
-    redirectTo:
-      payload.scenario === "expired" ? "/billing/locked" : "/dashboard",
+    redirectTo: accessState.hasAccess ? "/dashboard" : "/billing/locked",
   };
 }
 
@@ -221,7 +225,7 @@ export async function signUpAction(values: unknown) {
   setSessionCookies(cookieStore, {
     email: payload.email,
     fullName: payload.fullName,
-    scenario: payload.scenario,
+    scenario: "trialing",
     workspacePreset: "blank",
   });
 

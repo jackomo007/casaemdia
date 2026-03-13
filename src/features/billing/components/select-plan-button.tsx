@@ -25,7 +25,12 @@ export function SelectPlanButton({
       onClick={() =>
         startTransition(async () => {
           const result = await selectPlanAction({ planCode });
-          toast.success("Fluxo de pagamento mockado aprovado.");
+          if (!result.success) {
+            toast.error(result.message ?? "Não foi possível continuar.");
+            return;
+          }
+
+          toast.success("Assinatura ativada com sucesso.");
           if (!result.redirectTo) {
             return;
           }

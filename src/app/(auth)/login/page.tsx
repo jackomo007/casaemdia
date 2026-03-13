@@ -21,8 +21,8 @@ export default async function LoginPage({
             Tudo o que move a casa, num painel só.
           </h1>
           <p className="mt-4 text-sm leading-7 text-slate-600">
-            Entre para ver o dashboard, testar cenários de assinatura e navegar
-            por finanças, agenda, filhos, saúde e insights.
+            Entre para acompanhar finanças, agenda, filhos, saúde e insights em
+            um só lugar.
           </p>
           {shouldShowCheckEmail ? (
             <div className="mt-6 rounded-3xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-6 text-sky-900">

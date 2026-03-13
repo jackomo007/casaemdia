@@ -9,20 +9,14 @@ export function PricingGrid({ plans }: { plans: PlanDefinition[] }) {
       <PageHeader
         eyebrow="Planos"
         title="Assinatura sem fricção"
-        description="7 dias grátis sem cartão e upgrade 100% self-service quando a família estiver pronta."
+        description="O trial de 7 dias começa no cadastro. Depois disso, escolha o plano pago que melhor encaixa na rotina da família."
       />
       <div className="grid gap-5 xl:grid-cols-4">
         {plans.map((plan) => (
           <PlanCard
             key={plan.code}
             plan={plan}
-            action={
-              plan.code === "TRIAL" ? (
-                <SelectPlanButton planCode="FAMILY" label="Começar com trial" />
-              ) : (
-                <SelectPlanButton planCode={plan.code} />
-              )
-            }
+            action={<SelectPlanButton planCode={plan.code} />}
           />
         ))}
       </div>
