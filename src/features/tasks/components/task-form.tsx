@@ -29,7 +29,7 @@ export function TaskForm() {
       description: "Revisar meias, camiseta azul e agasalho leve.",
       dueDate: "2026-03-18",
       priority: "medium",
-      assignee: "Marina",
+      assignee: "Responsavel",
       points: 10,
     },
   });

@@ -59,12 +59,12 @@ async function main() {
     await operation();
   }
 
-  const [marina, rafael] = await Promise.all([
+  const [ana, rafael] = await Promise.all([
     prisma.user.create({
       data: {
-        supabaseUserId: "seed-marina",
-        email: "marina@familiaoliveira.com.br",
-        fullName: "Marina Oliveira",
+        supabaseUserId: "seed-ana",
+        email: "ana@familiaoliveira.com.br",
+        fullName: "Ana Oliveira",
         phone: "+55 11 99999-1111",
       },
     }),
@@ -82,18 +82,18 @@ async function main() {
     data: {
       name: "Familia Oliveira",
       slug: "familia-oliveira",
-      ownerUserId: marina.id,
+      ownerUserId: ana.id,
       roles: {
         create: [
-          { userId: marina.id, role: "OWNER" },
+          { userId: ana.id, role: "OWNER" },
           { userId: rafael.id, role: "ADMIN" },
         ],
       },
       members: {
         create: [
           {
-            userId: marina.id,
-            displayName: "Marina",
+            userId: ana.id,
+            displayName: "Ana",
             type: "ADULT",
             relationshipLabel: "Mae",
             isPrimaryContact: true,
@@ -130,14 +130,14 @@ async function main() {
   const theoMember = household.members.find(
     (member) => member.displayName === "Theo",
   );
-  const marinaMember = household.members.find(
-    (member) => member.displayName === "Marina",
+  const anaMember = household.members.find(
+    (member) => member.displayName === "Ana",
   );
   const rafaelMember = household.members.find(
     (member) => member.displayName === "Rafael",
   );
 
-  if (!liviaMember || !theoMember || !marinaMember || !rafaelMember) {
+  if (!liviaMember || !theoMember || !anaMember || !rafaelMember) {
     throw new Error("Membros principais nao encontrados.");
   }
 
@@ -301,8 +301,8 @@ async function main() {
         householdId: household.id,
         categoryId: findCategory("pj"),
         accountId: digitalAccount.id,
-        memberId: marinaMember.id,
-        title: "Freela design Marina",
+        memberId: anaMember.id,
+        title: "Freela design Ana",
         amount: 2600,
         competenceDate: new Date("2026-03-01"),
         dueDate: new Date("2026-03-12"),
@@ -341,7 +341,7 @@ async function main() {
         householdId: household.id,
         categoryId: findCategory("cartao"),
         accountId: cardAccount.id,
-        memberId: marinaMember.id,
+        memberId: anaMember.id,
         installmentPlanId: installmentPlan.id,
         title: "Cartao Nubank",
         amount: 1698.9,
@@ -461,7 +461,7 @@ async function main() {
 
   await prisma.taskAssignment.createMany({
     data: [
-      { taskId: task1.id, memberId: marinaMember.id, userId: marina.id },
+      { taskId: task1.id, memberId: anaMember.id, userId: ana.id },
       { taskId: task2.id, memberId: liviaMember.id },
     ],
   });
@@ -581,7 +581,7 @@ async function main() {
   await prisma.notification.create({
     data: {
       householdId: household.id,
-      userId: marina.id,
+      userId: ana.id,
       type: "TASK",
       title: "3 tarefas pendentes de alta prioridade",
       content: "Lanche da semana, licao da Livia e revisar conta de energia.",
@@ -592,7 +592,7 @@ async function main() {
     data: [
       {
         householdId: household.id,
-        userId: marina.id,
+        userId: ana.id,
       },
       {
         householdId: household.id,
@@ -604,7 +604,7 @@ async function main() {
   await prisma.auditLog.create({
     data: {
       householdId: household.id,
-      actorUserId: marina.id,
+      actorUserId: ana.id,
       action: "seed.bootstrap",
       entityType: "household",
       entityId: household.id,
@@ -675,7 +675,7 @@ async function main() {
   const activeSubscription = await prisma.subscription.create({
     data: {
       householdId: household.id,
-      userId: marina.id,
+      userId: ana.id,
       planId: familyAIPlan.id,
       provider: "MERCADO_PAGO",
       providerCustomerId: "mp_customer_oliveira",
@@ -706,8 +706,8 @@ async function main() {
       householdId: household.id,
       provider: "MERCADO_PAGO",
       providerCustomerId: "mp_customer_oliveira",
-      email: marina.email,
-      fullName: marina.fullName,
+      email: ana.email,
+      fullName: ana.fullName,
       document: "11122233344",
     },
   });
@@ -739,7 +739,7 @@ async function main() {
     data: {
       name: "Familia Santos",
       slug: "familia-santos",
-      ownerUserId: marina.id,
+      ownerUserId: ana.id,
     },
   });
 
@@ -747,7 +747,7 @@ async function main() {
     data: [
       {
         householdId: household.id,
-        emailNormalized: "marina@familiaoliveira.com.br",
+        emailNormalized: "ana@familiaoliveira.com.br",
         startedAt: new Date("2026-03-03T12:00:00"),
         endsAt: new Date("2026-03-10T11:59:59"),
         convertedToPaidAt: new Date("2026-03-10T12:00:00"),

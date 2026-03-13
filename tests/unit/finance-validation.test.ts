@@ -10,7 +10,7 @@ describe("financeEntrySchema", () => {
       amount: 199.9,
       kind: "expense",
       category: "Alimentacao",
-      member: "Marina",
+      member: "Responsavel",
       dueDate: "2026-03-20",
       competenceDate: "2026-03-01",
       account: "Conta principal",

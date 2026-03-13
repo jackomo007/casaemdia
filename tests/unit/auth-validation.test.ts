@@ -1,10 +1,10 @@
 import { loginSchema, registerSchema } from "@/lib/validations/auth";
 
 describe("auth validation", () => {
-  it("aceita login com a senha demo existente", () => {
+  it("aceita login com credenciais em formato valido", () => {
     const result = loginSchema.safeParse({
-      email: "marina@familiaoliveira.com.br",
-      password: "123456",
+      email: "usuario@exemplo.com",
+      password: "Senha123",
     });
 
     expect(result.success).toBe(true);

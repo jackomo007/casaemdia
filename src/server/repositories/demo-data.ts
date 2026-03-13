@@ -65,7 +65,7 @@ const baseTasks: TaskItem[] = [
     dueDate: "2026-03-16T06:30:00.000Z",
     priority: "high",
     status: "todo",
-    assignee: "Marina",
+    assignee: "Ana",
     subtasksDone: 1,
     subtasksTotal: 3,
   },
@@ -210,11 +210,11 @@ const financeEntries: FinanceEntry[] = [
   },
   {
     id: "fin-income-pj",
-    title: "Freela design Marina",
+    title: "Freela design Ana",
     amount: 2600,
     kind: "income",
     category: "PJ",
-    member: "Marina",
+    member: "Ana",
     dueDate: "2026-03-12T10:00:00.000Z",
     competenceDate: "2026-03-01T03:00:00.000Z",
     paymentDate: "2026-03-12T10:00:00.000Z",
@@ -252,7 +252,7 @@ const financeEntries: FinanceEntry[] = [
     amount: 1698.9,
     kind: "expense",
     category: "Cartão",
-    member: "Marina",
+    member: "Ana",
     dueDate: "2026-03-18T12:00:00.000Z",
     competenceDate: "2026-03-01T03:00:00.000Z",
     status: "pending",
@@ -305,7 +305,7 @@ const financeOverview: FinanceOverviewData = {
 };
 
 const dashboardBase: DashboardData = {
-  greetingName: "Marina",
+  greetingName: "Ana",
   householdName: "Família Oliveira",
   monthLabel: "Março de 2026",
   metrics: [

@@ -114,12 +114,7 @@ Abra `http://localhost:3000`.
 
 ### Demo mode
 
-Com `NEXT_PUBLIC_ENABLE_DEMO_MODE=true`, o app funciona sem banco e sem Supabase.
-
-Na tela de login, use:
-
-- e-mail: `marina@familiaoliveira.com.br`
-- senha: `123456`
+Com `NEXT_PUBLIC_ENABLE_DEMO_MODE=true`, os services podem usar o workspace local para desenvolvimento sem banco.
 
 Voce tambem pode trocar o cenario demo:
 
@@ -172,7 +167,7 @@ Hoje o app ja faz:
 - logout
 - middleware de protecao
 
-Sem chaves do Supabase, ele cai automaticamente no modo demo.
+Sem chaves do Supabase, login e cadastro ficam indisponiveis.
 
 ### Postgres
 

@@ -11,10 +11,6 @@ import {
 import { getDemoAccessState } from "@/server/repositories/demo-data";
 import type { AccessState, SessionUser, WorkspacePreset } from "@/types";
 
-export function isDemoModeEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE !== "false";
-}
-
 function deriveNameFromEmail(email: string): string {
   const [localPart = "Familia"] = email.split("@");
 
@@ -84,10 +80,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   return {
     email,
-    fullName:
-      email === "marina@familiaoliveira.com.br"
-        ? "Marina Oliveira"
-        : deriveNameFromEmail(email),
+    fullName: deriveNameFromEmail(email),
   };
 }
 
@@ -108,14 +101,6 @@ export async function getSessionWorkspaceKey(): Promise<string> {
   return `${preset}:${emailKey}`;
 }
 
-function getMarinaDemoAccessState(): AccessState {
-  return {
-    scenario: "active",
-    status: "ACTIVE",
-    hasAccess: true,
-  };
-}
-
 export async function getAccessStateForEmail(
   email?: string | null,
 ): Promise<AccessState> {
@@ -129,10 +114,6 @@ export async function getAccessStateForEmail(
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-
-  if (normalizedEmail === "marina@familiaoliveira.com.br") {
-    return getMarinaDemoAccessState();
-  }
 
   if (!isDatabaseConfigured()) {
     return getDemoAccessState("expired");

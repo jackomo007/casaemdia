@@ -10,6 +10,7 @@ import {
   getAuthRateLimitState,
   registerAuthFailure,
 } from "@/lib/auth-rate-limit";
+import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import {
   DEMO_SCENARIO_COOKIE,
   DEMO_SESSION_COOKIE,
@@ -21,7 +22,6 @@ import { isSupabaseConfigured } from "@/lib/auth/supabase-config";
 import {
   getAccessStateForEmail,
   getSessionUser,
-  isDemoModeEnabled,
   serializeSessionUser,
 } from "@/lib/auth/session";
 import { getSessionCookieOptions } from "@/lib/security";
@@ -46,6 +46,19 @@ function getAppUrl() {
   }
 
   return appUrl.endsWith("/") ? appUrl.slice(0, -1) : appUrl;
+}
+
+async function getRegisteredFullName(email: string) {
+  if (!isDatabaseConfigured()) {
+    return null;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { fullName: true },
+  });
+
+  return user?.fullName?.trim() || null;
 }
 
 function setSessionCookies(
@@ -85,15 +98,11 @@ export async function signInAction(values: unknown) {
   }
 
   const cookieStore = await cookies();
-  const isDemoCredentials =
-    normalizedEmail === "marina@familiaoliveira.com.br" &&
-    payload.password === "123456";
-  const isMarinaDemo = normalizedEmail === "marina@familiaoliveira.com.br";
+  const registeredFullName = await getRegisteredFullName(normalizedEmail);
   let sessionUser: SessionUser = {
     email: normalizedEmail,
-    fullName: isMarinaDemo
-      ? "Marina Oliveira"
-      : (normalizedEmail.split("@")[0] ?? "Responsavel"),
+    fullName:
+      registeredFullName || (normalizedEmail.split("@")[0] ?? "Responsavel"),
   };
   let workspacePreset: WorkspacePreset = "blank";
 
@@ -104,7 +113,7 @@ export async function signInAction(values: unknown) {
       password: payload.password,
     });
 
-    if (error && !(isDemoModeEnabled() && isDemoCredentials)) {
+    if (error) {
       registerAuthFailure(rateLimit.key);
       return {
         success: false,
@@ -124,7 +133,7 @@ export async function signInAction(values: unknown) {
       };
       workspacePreset = "blank";
     }
-  } else if (!isDemoModeEnabled() || !isDemoCredentials) {
+  } else {
     registerAuthFailure(rateLimit.key);
     return {
       success: false,
