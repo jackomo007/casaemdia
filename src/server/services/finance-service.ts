@@ -4,6 +4,7 @@ import { getWorkspaceSession } from "@/lib/auth/session";
 import {
   addFinanceEntry,
   getWorkspaceSnapshot,
+  updateFinanceEntryStatus,
 } from "@/server/repositories/demo-store";
 import type { CreateFinanceEntryInput } from "@/types";
 
@@ -25,4 +26,12 @@ export async function createFinanceEntries(inputs: CreateFinanceEntryInput[]) {
   }
 
   return getWorkspaceSnapshot(session).finance;
+}
+
+export async function updateEntryStatus(input: {
+  id: string;
+  status: "paid" | "pending" | "overdue";
+}) {
+  const session = await getWorkspaceSession();
+  return updateFinanceEntryStatus(session, input).finance;
 }

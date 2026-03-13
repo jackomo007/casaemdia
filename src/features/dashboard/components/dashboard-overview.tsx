@@ -53,7 +53,7 @@ export function DashboardOverview({
           <div className="border-border/70 space-y-4 rounded-[32px] border bg-white/85 p-6 shadow-[0_24px_70px_-48px_rgba(80,64,153,0.32)]">
             <SectionHeader
               title="Proximos 7 dias"
-              description="Compromissos escolares, medicos e financeiros priorizados."
+              description="Compromissos da agenda e vencimentos priorizados."
             />
             <div className="grid gap-4 md:grid-cols-2">
               {data.nextSevenDays.map((event) => (
@@ -63,8 +63,8 @@ export function DashboardOverview({
           </div>
           <div className="border-border/70 space-y-4 rounded-[32px] border bg-white/85 p-6 shadow-[0_24px_70px_-48px_rgba(80,64,153,0.32)]">
             <SectionHeader
-              title="Tarefas pendentes"
-              description="Casa, filhos e pequenas operacoes que nao podem escapar."
+              title="Agenda prioritaria"
+              description="Itens operacionais que pedem atencao antes do restante da semana."
             />
             <div className="grid gap-4 md:grid-cols-2">
               {data.pendingTasks.map((task) => (

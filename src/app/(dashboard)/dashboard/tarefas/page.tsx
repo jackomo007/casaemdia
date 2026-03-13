@@ -1,7 +1,5 @@
-import { TasksOverview } from "@/features/tasks/components/tasks-overview";
-import { getTaskList } from "@/server/services/task-service";
+import { redirect } from "next/navigation";
 
-export default async function TasksPage() {
-  const tasks = await getTaskList();
-  return <TasksOverview tasks={tasks} />;
+export default function TasksPage() {
+  redirect("/dashboard/agenda");
 }

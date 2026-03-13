@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -33,10 +33,11 @@ export function CalendarEventForm() {
         "Segunda-feira e dia de atividade coletiva com lanche compartilhado.",
       startsAt: "2026-03-19T07:00",
       kind: "school",
-      badge: "Escola",
-      childName: "Livia",
+      priority: "medium",
     },
   });
+  const kind = useWatch({ control: form.control, name: "kind" });
+  const priority = useWatch({ control: form.control, name: "priority" });
 
   const onSubmit = form.handleSubmit((values) => {
     startTransition(async () => {
@@ -77,7 +78,7 @@ export function CalendarEventForm() {
       <div className="space-y-2">
         <Label>Tipo</Label>
         <Select
-          defaultValue={form.getValues("kind")}
+          value={kind}
           onValueChange={(value) =>
             form.setValue("kind", value as CalendarEventSchema["kind"])
           }
@@ -96,20 +97,22 @@ export function CalendarEventForm() {
         </Select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="event-badge">Badge</Label>
-        <Input
-          id="event-badge"
-          {...form.register("badge")}
-          className="rounded-2xl"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="event-childName">Criança</Label>
-        <Input
-          id="event-childName"
-          {...form.register("childName")}
-          className="rounded-2xl"
-        />
+        <Label>Prioridade</Label>
+        <Select
+          value={priority}
+          onValueChange={(value) =>
+            form.setValue("priority", value as CalendarEventSchema["priority"])
+          }
+        >
+          <SelectTrigger className="rounded-2xl">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="high">Alta</SelectItem>
+            <SelectItem value="medium">Media</SelectItem>
+            <SelectItem value="low">Baixa</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <Button
         type="submit"

@@ -55,8 +55,7 @@ export interface CalendarEventItem {
   endsAt?: string;
   location?: string;
   kind: EventKind;
-  badge: string;
-  childName?: string;
+  priority: PriorityLevel;
 }
 
 export interface TaskItem {
@@ -247,8 +246,7 @@ export interface CreateCalendarEventInput {
   description: string;
   startsAt: string;
   kind: EventKind;
-  badge: string;
-  childName?: string;
+  priority: PriorityLevel;
 }
 
 export interface CreateTaskInput {

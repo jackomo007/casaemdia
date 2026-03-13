@@ -17,21 +17,19 @@ import type {
 const baseEvents: CalendarEventItem[] = [
   {
     id: "event-school-uniform",
-    title: "Uniforme azul para a escola",
-    description: "Lembrar da camiseta azul e meia branca.",
+    title: "Separar materiais da reunião",
+    description: "Levar documentos e anotações para alinhar a semana.",
     startsAt: "2026-03-16T07:00:00.000Z",
     kind: "school",
-    badge: "Escola",
-    childName: "Livia",
+    priority: "medium",
   },
   {
     id: "event-vaccine",
-    title: "Reforço da vacina da gripe",
-    description: "Levar carteirinha e documento.",
+    title: "Consulta de rotina",
+    description: "Separar documentos e confirmar horário antes de sair.",
     startsAt: "2026-03-17T13:30:00.000Z",
     kind: "medical",
-    badge: "Saúde",
-    childName: "Theo",
+    priority: "medium",
   },
   {
     id: "event-bill",
@@ -39,32 +37,31 @@ const baseEvents: CalendarEventItem[] = [
     description: "Fechar o ciclo antes de novas compras grandes.",
     startsAt: "2026-03-18T12:00:00.000Z",
     kind: "billing",
-    badge: "Financeiro",
+    priority: "high",
   },
   {
     id: "event-couple",
-    title: "Consulta do casal",
-    description: "Sessão de acompanhamento marcada no centro.",
+    title: "Reunião da casa",
+    description: "Revisar contas, compras e prioridades dos próximos dias.",
     startsAt: "2026-03-20T19:00:00.000Z",
     kind: "family",
-    badge: "Família",
+    priority: "low",
   },
   {
     id: "event-school-meeting",
-    title: "Reunião pedagógica",
-    description: "Feedback do bimestre e agenda de provas.",
+    title: "Entrega de documentos",
+    description: "Confirmar checklist e concluir pendências administrativas.",
     startsAt: "2026-03-21T10:00:00.000Z",
     kind: "school",
-    badge: "Escola",
-    childName: "Livia",
+    priority: "medium",
   },
 ];
 
 const baseTasks: TaskItem[] = [
   {
     id: "task-lunchbox",
-    title: "Preparar lanche da semana",
-    description: "Separar frutas, sucos e potes para a escola.",
+    title: "Organizar compras da semana",
+    description: "Separar itens urgentes e revisar o que falta em casa.",
     dueDate: "2026-03-16T06:30:00.000Z",
     priority: "high",
     status: "todo",
@@ -85,15 +82,15 @@ const baseTasks: TaskItem[] = [
   },
   {
     id: "task-math-homework",
-    title: "Lição de matemática da Livia",
-    description: "Página 42 e exercícios 3 a 8.",
+    title: "Separar material da manutenção",
+    description:
+      "Deixar ferramentas e lista de reparos prontos para o técnico.",
     dueDate: "2026-03-17T18:00:00.000Z",
     priority: "high",
     status: "todo",
-    assignee: "Livia",
+    assignee: "Casa",
     subtasksDone: 0,
     subtasksTotal: 2,
-    points: 20,
   },
 ];
 
@@ -130,22 +127,22 @@ const baseShopping: ShoppingListSummary[] = [
   },
   {
     id: "shop-party",
-    title: "Aniversário do Theo",
-    category: "Evento",
+    title: "Reposição da casa",
+    category: "Operação",
     estimatedTotal: 212.9,
     progress: 20,
     items: [
       {
         id: "item-decoration",
-        name: "Decoração futebol",
+        name: "Lâmpadas",
         quantity: "1 kit",
         estimatedCost: 79.9,
         checked: false,
       },
       {
         id: "item-cake",
-        name: "Bolo pequeno",
-        quantity: "1 unidade",
+        name: "Produtos de limpeza",
+        quantity: "1 reposição",
         estimatedCost: 95,
         checked: false,
       },
@@ -166,9 +163,9 @@ const baseInsights: InsightCardData[] = [
   },
   {
     id: "insight-busy-week",
-    title: "Semana carregada para escola e saúde",
+    title: "Semana carregada na agenda",
     content:
-      "Os próximos 7 dias concentram 4 compromissos escolares e 2 médicos. Antecipe mochila, uniforme e documentos.",
+      "Os próximos 7 dias concentram compromissos financeiros, tarefas e reuniões. Antecipe materiais e confirmações para evitar correria.",
     tone: "Organização",
     kind: "organization",
     disclaimer:
@@ -186,39 +183,13 @@ const baseInsights: InsightCardData[] = [
   },
 ];
 
-const baseChildren: ChildSummary[] = [
-  {
-    id: "child-livia",
-    name: "Livia",
-    age: 9,
-    school: "Colégio Jardim das Letras",
-    pendingTasks: 3,
-    nextEvent: "Reunião pedagógica em 21 de março",
-    note: "Levar caderno de leitura na segunda.",
-  },
-  {
-    id: "child-theo",
-    name: "Theo",
-    age: 5,
-    school: "Espaço Crescer",
-    pendingTasks: 1,
-    nextEvent: "Vacina da gripe em 17 de março",
-    note: "Separar roupa confortável para a consulta.",
-  },
-];
+const baseChildren: ChildSummary[] = [];
 
 const baseHealth: HealthReminder[] = [
   {
-    id: "health-vaccine",
-    title: "Vacina da gripe",
-    description: "Reforço anual com carteirinha em mãos.",
-    dueDate: "2026-03-17T13:30:00.000Z",
-    childName: "Theo",
-  },
-  {
     id: "health-dentist",
-    title: "Dentista da família",
-    description: "Consulta preventiva do casal e avaliação infantil.",
+    title: "Renovar receita do consultório",
+    description: "Confirmar disponibilidade e separar os documentos.",
     dueDate: "2026-03-24T14:00:00.000Z",
   },
 ];
@@ -289,11 +260,11 @@ const financeEntries: FinanceEntry[] = [
   },
   {
     id: "fin-expense-school",
-    title: "Material escolar complementar",
+    title: "Material de escritorio",
     amount: 359.9,
     kind: "expense",
-    category: "Escola",
-    member: "Livia",
+    category: "Operacao",
+    member: "Casa",
     dueDate: "2026-03-22T12:00:00.000Z",
     competenceDate: "2026-03-01T03:00:00.000Z",
     status: "pending",
@@ -349,21 +320,21 @@ const dashboardBase: DashboardData = {
       id: "metric-events",
       label: "Eventos nos próximos 7 dias",
       value: "6",
-      helper: "Escola e saúde concentram a agenda",
+      helper: "Agenda, contas e rotina concentram a semana",
       trend: "neutral",
     },
     {
       id: "metric-tasks",
-      label: "Tarefas pendentes",
-      value: "9",
-      helper: "3 de alta prioridade para esta semana",
+      label: "Itens prioritarios",
+      value: "5",
+      helper: "3 itens de alta prioridade para esta semana",
       trend: "down",
     },
     {
       id: "metric-shopping",
       label: "Compras em aberto",
       value: "R$ 599,30",
-      helper: "Mercado e aniversário do Theo",
+      helper: "Mercado e reposicoes da operacao da casa",
       trend: "neutral",
     },
   ],
@@ -377,19 +348,18 @@ const dashboardBase: DashboardData = {
     },
     {
       id: "alert-school",
-      title: "Semana escolar intensa",
+      title: "Agenda concentrada",
       description:
-        "Uniforme especial, reunião pedagógica e material complementar.",
+        "Ha eventos, tarefas e documentos importantes no mesmo intervalo.",
       priority: "medium",
       href: "/dashboard/agenda",
     },
     {
       id: "alert-vaccine",
-      title: "Vacina agendada para Theo",
-      description:
-        "Levar carteirinha e um lanche leve para depois da consulta.",
+      title: "Lembrete de consulta",
+      description: "Separe documentos e confirme o horario com antecedencia.",
       priority: "medium",
-      href: "/dashboard/saude",
+      href: "/dashboard/agenda",
     },
   ],
   upcomingEvents: baseEvents.slice(0, 3),
@@ -470,16 +440,7 @@ export function getDemoWorkspace(
             },
             ...billingHistoryBase,
           ],
-          featureCodes: [
-            "dashboard",
-            "finance",
-            "calendar",
-            "tasks",
-            "shopping",
-            "children",
-            "health",
-            "ai",
-          ],
+          featureCodes: ["dashboard", "finance", "calendar", "shopping", "ai"],
         }
       : scenario === "past_due"
         ? {
@@ -497,15 +458,7 @@ export function getDemoWorkspace(
                 createdAt: "2026-03-12T12:00:00.000Z",
               },
             ],
-            featureCodes: [
-              "dashboard",
-              "finance",
-              "calendar",
-              "tasks",
-              "shopping",
-              "children",
-              "health",
-            ],
+            featureCodes: ["dashboard", "finance", "calendar", "shopping"],
           }
         : {
             status: access.status,
@@ -524,10 +477,7 @@ export function getDemoWorkspace(
               "dashboard",
               "finance",
               "calendar",
-              "tasks",
               "shopping",
-              "children",
-              "health",
               "ai",
             ],
           };
@@ -596,9 +546,9 @@ export function createBlankWorkspace(
         },
         {
           id: "metric-tasks",
-          label: "Tarefas pendentes",
+          label: "Itens prioritarios",
           value: "0",
-          helper: "Nenhuma tarefa cadastrada ainda.",
+          helper: "Nenhum item prioritario cadastrado ainda.",
           trend: "neutral",
         },
         {
@@ -665,10 +615,7 @@ export function createBlankWorkspace(
               "dashboard",
               "finance",
               "calendar",
-              "tasks",
               "shopping",
-              "children",
-              "health",
               "ai",
             ],
           }
@@ -680,15 +627,7 @@ export function createBlankWorkspace(
               currentPeriodEnd: "2026-03-12T12:00:00.000Z",
               renewalLabel: "Pagamento pendente desde 12 de março",
               history: [],
-              featureCodes: [
-                "dashboard",
-                "finance",
-                "calendar",
-                "tasks",
-                "shopping",
-                "children",
-                "health",
-              ],
+              featureCodes: ["dashboard", "finance", "calendar", "shopping"],
             }
           : {
               status: access.status,
@@ -707,10 +646,7 @@ export function createBlankWorkspace(
                 "dashboard",
                 "finance",
                 "calendar",
-                "tasks",
                 "shopping",
-                "children",
-                "health",
                 "ai",
               ],
             },

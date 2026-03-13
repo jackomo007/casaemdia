@@ -31,5 +31,11 @@ export const financeSheetSchema = z
   .array(financeEntrySchema)
   .min(1, "Preencha ao menos uma linha.");
 
+export const financeEntryStatusSchema = z.object({
+  id: z.string().trim().min(1, "Informe o lançamento."),
+  status: z.enum(["paid", "pending", "overdue"]),
+});
+
 export type FinanceEntrySchema = z.infer<typeof financeEntrySchema>;
 export type FinanceSheetSchema = z.infer<typeof financeSheetSchema>;
+export type FinanceEntryStatusSchema = z.infer<typeof financeEntryStatusSchema>;

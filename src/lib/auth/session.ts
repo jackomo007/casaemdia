@@ -11,8 +11,6 @@ import {
 import { getDemoAccessState } from "@/server/repositories/demo-data";
 import type { AccessState, SessionUser, WorkspacePreset } from "@/types";
 
-const validPresets: WorkspacePreset[] = ["sample", "blank"];
-
 export function isDemoModeEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE !== "false";
 }
@@ -56,13 +54,12 @@ function parseSessionUser(value?: string | null): SessionUser | null {
 
 export function normalizeWorkspacePreset(
   value?: string | null,
-  email?: string | null,
 ): WorkspacePreset {
-  if (value && validPresets.includes(value as WorkspacePreset)) {
-    return value as WorkspacePreset;
+  if (value === "blank") {
+    return "blank";
   }
 
-  return email === "marina@familiaoliveira.com.br" ? "sample" : "blank";
+  return "blank";
 }
 
 export async function getIsAuthenticated(): Promise<boolean> {
@@ -96,11 +93,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
 export async function getSessionWorkspacePreset(): Promise<WorkspacePreset> {
   const cookieStore = await cookies();
-  const email = cookieStore.get(DEMO_SESSION_COOKIE)?.value;
-
   return normalizeWorkspacePreset(
     cookieStore.get(WORKSPACE_PRESET_COOKIE)?.value,
-    email,
   );
 }
 

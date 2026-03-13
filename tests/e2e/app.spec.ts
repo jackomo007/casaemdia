@@ -9,30 +9,41 @@ test("faz login e visualiza o dashboard", async ({ page }) => {
   await expect(page.getByText("Bom te ver, Marina")).toBeVisible();
 });
 
-test("cria lancamento, evento e tarefa no modo demo", async ({ page }) => {
+test("usa agenda, planilha rapida e busca do topo", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill("marina@familiaoliveira.com.br");
   await page.getByLabel("Senha").fill("123456");
   await page.getByRole("button", { name: "Entrar" }).click();
-
-  await page.goto("/dashboard/financas");
-  await page.getByLabel("Título").fill("Compra de frutas");
-  await page.getByLabel("Valor").fill("88.3");
-  await page.getByRole("button", { name: "Criar lançamento" }).click();
-  await expect(page.getByText("Compra de frutas")).toBeVisible();
+  await expect(page).toHaveURL(/dashboard/);
 
   await page.goto("/dashboard/agenda");
-  await page.getByLabel("Título").fill("Levar bolo para a escola");
-  await page.getByRole("button", { name: "Criar evento" }).click();
-  await expect(page.getByText("Levar bolo para a escola")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Mes" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Semana" })).toBeVisible();
+  await page.getByRole("button", { name: "Semana" }).click();
+  await expect(page.locator("#event-title")).toBeVisible();
 
-  await page.goto("/dashboard/tarefas");
-  await page.getByLabel("Título").fill("Separar material de artes");
-  await page.getByRole("button", { name: "Criar tarefa" }).click();
-  await expect(page.getByText("Separar material de artes")).toBeVisible();
+  await page.goto("/dashboard/financas");
+  await page
+    .getByLabel("Custos que não podem travar nome 1")
+    .fill("Compra de frutas");
+  await page.getByLabel("Custos que não podem travar valor 1").fill("88.3");
+  await expect(
+    page.getByLabel("Custos que não podem travar nome 1"),
+  ).toHaveValue("Compra de frutas");
+
+  await page.getByLabel("Buscar no painel").fill("renda");
+  await page.getByLabel("Buscar no painel").press("Enter");
+  await expect(page).toHaveURL(/dashboard\/busca/);
+  await expect(page.getByText("Estruture renda e contas fixas")).toBeVisible();
 });
 
 test("abre a tela de bloqueio e permite selecionar plano", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("E-mail").fill("marina@familiaoliveira.com.br");
+  await page.getByLabel("Senha").fill("123456");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page).toHaveURL(/dashboard/);
+
   await page.goto("/billing/locked");
   await expect(
     page.getByText(/acesso está bloqueado|pagamento pendente/i),

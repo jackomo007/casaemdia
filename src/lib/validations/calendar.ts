@@ -13,16 +13,7 @@ export const calendarEventSchema = z.object({
     .max(300, "Use no máximo 300 caracteres."),
   startsAt: z.string().min(1, "Selecione a data e hora."),
   kind: z.enum(["school", "medical", "billing", "family", "shopping", "task"]),
-  badge: z
-    .string()
-    .trim()
-    .min(2, "Informe um badge.")
-    .max(30, "Use no máximo 30 caracteres."),
-  childName: z
-    .string()
-    .trim()
-    .max(60, "Use no máximo 60 caracteres.")
-    .optional(),
+  priority: z.enum(["low", "medium", "high"]),
 });
 
 export type CalendarEventSchema = z.infer<typeof calendarEventSchema>;

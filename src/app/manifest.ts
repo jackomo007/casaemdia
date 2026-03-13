@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Painel da Familia",
     short_name: "Painel Familia",
     description:
-      "Painel operacional da familia com agenda, finanças, tarefas, compras e insights com IA.",
+      "Painel operacional da familia com agenda, finanças, compras e insights com IA.",
     start_url: "/",
     display: "standalone",
     background_color: "#f6f5fb",

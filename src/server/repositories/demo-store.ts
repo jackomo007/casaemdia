@@ -107,8 +107,7 @@ export function addCalendarEvent(
     description: input.description,
     startsAt: input.startsAt,
     kind: input.kind,
-    badge: input.badge,
-    childName: input.childName,
+    priority: input.priority,
   };
 
   workspace.events = [event, ...workspace.events].sort((a, b) =>
@@ -116,6 +115,26 @@ export function addCalendarEvent(
   );
   workspace.dashboard.upcomingEvents = workspace.events.slice(0, 3);
   workspace.dashboard.nextSevenDays = workspace.events.slice(0, 6);
+
+  return workspace;
+}
+
+export function updateFinanceEntryStatus(
+  context: DemoStoreContext,
+  input: { id: string; status: "paid" | "pending" | "overdue" },
+): HouseholdWorkspace {
+  const workspace = getWorkspace(context);
+
+  workspace.finance.entries = workspace.finance.entries.map((entry) =>
+    entry.id === input.id
+      ? {
+          ...entry,
+          status: input.status,
+          paymentDate:
+            input.status === "paid" ? new Date().toISOString() : undefined,
+        }
+      : entry,
+  );
 
   return workspace;
 }

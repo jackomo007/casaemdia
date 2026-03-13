@@ -19,7 +19,7 @@ export function Sidebar() {
           Operação familiar em um só lugar
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          Rotina, dinheiro, escola e saúde com contexto visual.
+          Agenda, dinheiro e compras com contexto visual.
         </p>
       </div>
       <nav className="mt-6 flex flex-1 flex-col gap-1">

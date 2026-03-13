@@ -1,7 +1,7 @@
-import { Bell, Search } from "lucide-react";
+import { Bell } from "lucide-react";
 
+import { DashboardSearchForm } from "@/components/layout/dashboard-search-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { getSessionContext } from "@/lib/auth/session";
 import { signOutAction } from "@/server/actions/auth-actions";
 
@@ -19,13 +19,7 @@ export async function Topbar({ title }: { title: string }) {
           <h1 className="mt-1 text-xl font-semibold text-slate-900">{title}</h1>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative hidden w-72 md:block">
-            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              placeholder="Buscar eventos, contas e tarefas..."
-              className="rounded-2xl border-white bg-slate-50 pl-10 shadow-none"
-            />
-          </div>
+          <DashboardSearchForm />
           <Button variant="outline" size="icon" className="rounded-2xl">
             <Bell className="h-4 w-4" />
           </Button>

@@ -298,12 +298,13 @@ function PlanningTable({
         </div>
 
         <div className="space-y-3">
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <div
               key={row.id}
               className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-3"
             >
               <Input
+                aria-label={`${title} nome ${index + 1}`}
                 value={row.label}
                 onChange={(event) =>
                   onChange(row.id, "label", event.target.value)
@@ -324,7 +325,10 @@ function PlanningTable({
                       onChange(row.id, "incomeType", value ?? "Extra")
                     }
                   >
-                    <SelectTrigger className="rounded-2xl border-white bg-white">
+                    <SelectTrigger
+                      aria-label={`${title} tipo ${index + 1}`}
+                      className="rounded-2xl border-white bg-white"
+                    >
                       <SelectValue placeholder="Tipo" />
                     </SelectTrigger>
                     <SelectContent>
@@ -335,6 +339,7 @@ function PlanningTable({
                   </Select>
                 ) : null}
                 <Input
+                  aria-label={`${title} vencimento ${index + 1}`}
                   type="date"
                   value={row.dueDate}
                   onChange={(event) =>
@@ -343,6 +348,7 @@ function PlanningTable({
                   className="rounded-2xl border-white bg-white"
                 />
                 <Input
+                  aria-label={`${title} valor ${index + 1}`}
                   inputMode="decimal"
                   placeholder="0,00"
                   value={row.amount}

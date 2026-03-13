@@ -95,7 +95,7 @@ export async function signInAction(values: unknown) {
       ? "Marina Oliveira"
       : (normalizedEmail.split("@")[0] ?? "Responsavel"),
   };
-  let workspacePreset: WorkspacePreset = isMarinaDemo ? "sample" : "blank";
+  let workspacePreset: WorkspacePreset = "blank";
 
   if (isSupabaseConfigured()) {
     const supabase = await createSupabaseServerClient();
@@ -122,10 +122,7 @@ export async function signInAction(values: unknown) {
             ? data.user.user_metadata.full_name
             : sessionUser.fullName,
       };
-      workspacePreset =
-        sessionUser.email === "marina@familiaoliveira.com.br"
-          ? "sample"
-          : "blank";
+      workspacePreset = "blank";
     }
   } else if (!isDemoModeEnabled() || !isDemoCredentials) {
     registerAuthFailure(rateLimit.key);
