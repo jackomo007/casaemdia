@@ -28,10 +28,9 @@ export function CalendarEventForm() {
   const form = useForm<CalendarEventSchema>({
     resolver: zodResolver(calendarEventSchema),
     defaultValues: {
-      title: "Levar fruta para a escola",
-      description:
-        "Segunda-feira e dia de atividade coletiva com lanche compartilhado.",
-      startsAt: "2026-03-19T07:00",
+      title: "",
+      description: "",
+      startsAt: "",
       kind: "school",
       priority: "medium",
     },
@@ -56,6 +55,7 @@ export function CalendarEventForm() {
           id="event-title"
           {...form.register("title")}
           className="rounded-2xl"
+          placeholder="Ex.: Reunião da escola ou vencimento importante"
         />
       </div>
       <div className="space-y-2 md:col-span-2">
@@ -64,6 +64,7 @@ export function CalendarEventForm() {
           id="event-description"
           {...form.register("description")}
           className="rounded-2xl"
+          placeholder="Adicione um contexto rápido para lembrar o que precisa acontecer"
         />
       </div>
       <div className="space-y-2">
@@ -109,7 +110,7 @@ export function CalendarEventForm() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="high">Alta</SelectItem>
-            <SelectItem value="medium">Media</SelectItem>
+            <SelectItem value="medium">Média</SelectItem>
             <SelectItem value="low">Baixa</SelectItem>
           </SelectContent>
         </Select>

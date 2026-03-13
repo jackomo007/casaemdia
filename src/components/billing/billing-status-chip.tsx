@@ -1,5 +1,6 @@
 import type { BillingStatus } from "@/types";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { getBillingStatusLabel } from "@/lib/utils/labels";
 
 const toneByStatus: Record<
   BillingStatus,
@@ -14,5 +15,9 @@ const toneByStatus: Record<
 };
 
 export function BillingStatusChip({ status }: { status: BillingStatus }) {
-  return <StatusBadge tone={toneByStatus[status]}>{status}</StatusBadge>;
+  return (
+    <StatusBadge tone={toneByStatus[status]}>
+      {getBillingStatusLabel(status)}
+    </StatusBadge>
+  );
 }

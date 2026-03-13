@@ -11,6 +11,7 @@ import { ShoppingListCard } from "@/components/shared/shopping-list-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { TaskCard } from "@/components/shared/task-card";
 import { Button } from "@/components/ui/button";
+import { getBillingStatusLabel, getPriorityLabel } from "@/lib/utils/labels";
 import type { AccessState, DashboardData } from "@/types";
 
 export function DashboardOverview({
@@ -34,10 +35,10 @@ export function DashboardOverview({
       />
 
       <TrialBanner
-        label={access.status}
+        label={getBillingStatusLabel(access.status)}
         description={
           access.trialEndsAt
-            ? `Acesso atual: ${access.status}. Trial termina em ${new Date(access.trialEndsAt).toLocaleDateString("pt-BR")}.`
+            ? `Acesso atual: ${getBillingStatusLabel(access.status)}. Trial termina em ${new Date(access.trialEndsAt).toLocaleDateString("pt-BR")}.`
             : "Assinatura ativa com acesso liberado para todos os modulos."
         }
       />
@@ -99,7 +100,7 @@ export function DashboardOverview({
                   <StatusBadge
                     tone={alert.priority === "high" ? "danger" : "warning"}
                   >
-                    {alert.priority}
+                    {getPriorityLabel(alert.priority)}
                   </StatusBadge>
                 </Link>
               ))}

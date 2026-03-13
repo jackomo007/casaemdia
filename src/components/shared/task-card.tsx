@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatRelative } from "@/lib/utils/formatters";
+import { getPriorityLabel } from "@/lib/utils/labels";
 import type { TaskItem } from "@/types";
 
 const toneByPriority = {
@@ -21,7 +22,7 @@ export function TaskCard({ task }: { task: TaskItem }) {
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
             <StatusBadge tone={toneByPriority[task.priority]}>
-              {task.priority}
+              {getPriorityLabel(task.priority)}
             </StatusBadge>
             <h3 className="text-base font-semibold text-slate-950">
               {task.title}

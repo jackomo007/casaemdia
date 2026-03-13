@@ -3,18 +3,13 @@ import { CalendarClock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatDateTime } from "@/lib/utils/formatters";
+import { getPriorityLabel } from "@/lib/utils/labels";
 import type { CalendarEventItem } from "@/types";
 
 const priorityTone = {
   high: "danger",
   medium: "warning",
   low: "success",
-} as const;
-
-const priorityLabel = {
-  high: "Alta",
-  medium: "Media",
-  low: "Baixa",
 } as const;
 
 const kindLabel = {
@@ -33,7 +28,7 @@ export function EventCard({ event }: { event: CalendarEventItem }) {
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <StatusBadge tone={priorityTone[event.priority]}>
-              {priorityLabel[event.priority]}
+              {getPriorityLabel(event.priority)}
             </StatusBadge>
             <h3 className="text-base font-semibold text-slate-950">
               {event.title}
