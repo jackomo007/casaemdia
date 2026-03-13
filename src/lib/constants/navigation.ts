@@ -3,7 +3,6 @@ import {
   CreditCard,
   Home,
   Lightbulb,
-  Settings,
   ShoppingCart,
 } from "lucide-react";
 
@@ -13,7 +12,6 @@ export const dashboardNavigation = [
   { title: "Agenda", href: "/dashboard/agenda", icon: CalendarDays },
   { title: "Compras", href: "/dashboard/compras", icon: ShoppingCart },
   { title: "Insights", href: "/dashboard/insights", icon: Lightbulb },
-  { title: "Configuracoes", href: "/dashboard/configuracoes", icon: Settings },
 ] as const;
 
 export const mobileBottomNavigation = [
@@ -21,5 +19,5 @@ export const mobileBottomNavigation = [
   { title: "Agenda", href: "/dashboard/agenda", icon: CalendarDays },
   { title: "Financas", href: "/dashboard/financas", icon: CreditCard },
   { title: "Compras", href: "/dashboard/compras", icon: ShoppingCart },
-  { title: "Mais", href: "/dashboard/configuracoes", icon: Settings },
+  { title: "Insights", href: "/dashboard/insights", icon: Lightbulb },
 ] as const;

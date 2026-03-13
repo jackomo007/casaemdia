@@ -7,7 +7,7 @@ export const subscriptionPlans: PlanDefinition[] = [
     description: "Use o produto completo por 7 dias sem cadastrar cartao.",
     priceMonthly: 0,
     featureHighlights: [
-      "Agenda, finanças, tarefas e compras",
+      "Agenda, finanças e compras",
       "Insights basicos",
       "Onboarding sem cartao",
     ],
@@ -21,7 +21,7 @@ export const subscriptionPlans: PlanDefinition[] = [
     priceMonthly: 19.9,
     featureHighlights: [
       "Dashboard familiar completo",
-      "Agenda, tarefas e lista de compras",
+      "Agenda e lista de compras",
       "Fluxo financeiro e alertas",
     ],
     familySeats: "Ate 3 membros",
@@ -30,14 +30,13 @@ export const subscriptionPlans: PlanDefinition[] = [
   {
     code: "FAMILY",
     name: "Mensal Familia",
-    description:
-      "Mais capacidade para filhos, escola, saude e operacao da casa.",
+    description: "Mais capacidade para a operacao da casa com visao ampliada.",
     priceMonthly: 29.9,
     recommended: true,
     featureHighlights: [
       "Tudo do Essencial",
-      "Modulos de filhos e saude",
       "Mais membros e historico ampliado",
+      "Agenda e finanças com mais contexto",
     ],
     familySeats: "Ate 8 membros",
     hasAI: false,

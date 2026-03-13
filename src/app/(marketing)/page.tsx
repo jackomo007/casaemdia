@@ -3,11 +3,8 @@ import {
   ArrowRight,
   CalendarDays,
   CreditCard,
-  HeartPulse,
-  ListChecks,
   ShoppingCart,
   Sparkles,
-  UsersRound,
 } from "lucide-react";
 
 import { subscriptionPlans } from "@/lib/constants/plans";
@@ -26,7 +23,7 @@ export default function MarketingHomePage() {
                 Painel da Familia
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Agenda, finanças, filhos e IA em uma so operacao.
+                Agenda, finanças, compras e IA em uma so operacao.
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -49,9 +46,8 @@ export default function MarketingHomePage() {
               Controle a vida da casa com a clareza de um painel premium.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-              Centralize agenda, dinheiro, tarefas, compras, filhos e insights
-              com IA em uma experiencia mobile-first pronta para virar produto
-              comercial.
+              Centralize agenda, dinheiro, compras e insights com IA em uma
+              experiencia mobile-first pronta para virar produto comercial.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="rounded-2xl px-6">
@@ -97,19 +93,9 @@ export default function MarketingHomePage() {
                 text: "Escola, vacinas, contas, aniversarios e rotina.",
               },
               {
-                icon: ListChecks,
-                title: "Tarefas",
-                text: "Missao dos filhos, casa e checklists recorrentes.",
-              },
-              {
                 icon: ShoppingCart,
                 title: "Compras",
                 text: "Listas multiplas com custo estimado e progresso.",
-              },
-              {
-                icon: UsersRound,
-                title: "Filhos",
-                text: "Escola, uniforme, materiais e eventos por crianca.",
               },
               {
                 icon: Sparkles,
@@ -138,8 +124,8 @@ export default function MarketingHomePage() {
         <section className="grid gap-6 lg:grid-cols-3">
           {[
             {
-              title: "Agenda + escola + saude",
-              text: "Ve o que a familia precisa fazer nos proximos 7 dias sem perder detalhe escolar ou medico.",
+              title: "Agenda operacional",
+              text: "Veja o que a casa precisa fazer nos proximos 7 dias sem espalhar compromissos em varias telas.",
               icon: CalendarDays,
             },
             {
@@ -148,9 +134,9 @@ export default function MarketingHomePage() {
               icon: CreditCard,
             },
             {
-              title: "Rotina com IA e alertas",
-              text: "O produto aponta gargalos, semanas intensas e oportunidades simples de organizacao.",
-              icon: HeartPulse,
+              title: "Compras com contexto",
+              text: "Liste reposicoes e acompanhe custos sem perder a conexao com a rotina da casa.",
+              icon: ShoppingCart,
             },
           ].map((item) => (
             <div
