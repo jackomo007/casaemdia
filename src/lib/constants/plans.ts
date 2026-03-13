@@ -7,7 +7,7 @@ export const subscriptionPlans: PlanDefinition[] = [
     description: "Use o produto completo por 7 dias sem cadastrar cartao.",
     priceMonthly: 0,
     featureHighlights: [
-      "Agenda, financas, tarefas e compras",
+      "Agenda, finanças, tarefas e compras",
       "Insights basicos",
       "Onboarding sem cartao",
     ],

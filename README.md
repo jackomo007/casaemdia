@@ -1,6 +1,6 @@
 # Painel da Familia
 
-Base full-stack em Next.js para um SaaS de organizacao familiar com agenda, financas, tarefas, compras, saude, filhos, billing e insights com IA.
+Base full-stack em Next.js para um SaaS de organizacao familiar com agenda, finanças, tarefas, compras, saude, filhos, billing e insights com IA.
 
 ## Visao geral
 
@@ -25,7 +25,7 @@ Hoje a aplicacao funciona em dois modos:
 ## Principais modulos
 
 - Dashboard principal
-- Financas com cards, graficos e tabela tipo planilha
+- Finanças com cards, graficos e tabela tipo planilha
 - Agenda familiar
 - Tarefas da casa e dos filhos
 - Compras

@@ -26,7 +26,7 @@ export default function MarketingHomePage() {
                 Painel da Familia
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Agenda, financas, filhos e IA em uma so operacao.
+                Agenda, finanças, filhos e IA em uma so operacao.
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export default function MarketingHomePage() {
             {[
               {
                 icon: CreditCard,
-                title: "Financas da casa",
+                title: "Finanças da casa",
                 text: "Fluxo mensal, contas, cartoes, dividas e previsoes.",
               },
               {

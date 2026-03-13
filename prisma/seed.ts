@@ -642,7 +642,7 @@ async function main() {
       },
       {
         code: "finance",
-        name: "Financas",
+        name: "Finanças",
         description: "Fluxo financeiro e contas",
       },
       {
