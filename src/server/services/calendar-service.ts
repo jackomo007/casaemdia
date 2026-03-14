@@ -141,7 +141,8 @@ export async function createCalendarEvent(input: CreateCalendarEventInput) {
   const { session, workspace } = await getCurrentWorkspace();
 
   if (!workspace) {
-    return addCalendarEvent(session, input).events;
+    addCalendarEvent(session, input);
+    return buildAgendaItems(getWorkspaceSnapshot(session));
   }
 
   await prisma.calendarEvent.create({
@@ -161,7 +162,8 @@ export async function deleteCalendarEvent(id: string) {
   const { session, workspace } = await getCurrentWorkspace();
 
   if (!workspace) {
-    return removeCalendarEvent(session, id).events;
+    removeCalendarEvent(session, id);
+    return buildAgendaItems(getWorkspaceSnapshot(session));
   }
 
   await prisma.calendarEvent.deleteMany({

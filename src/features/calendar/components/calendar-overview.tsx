@@ -1,8 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,17 +39,12 @@ export function CalendarOverview({
   events: CalendarEventItem[];
   referenceDate: string;
 }) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [liveEvents, setLiveEvents] = useState(events);
   const [view, setView] = useState<AgendaView>("month");
   const filteredEvents = liveEvents.filter((event) =>
     isInSelectedView(event, view),
   );
-
-  useEffect(() => {
-    setLiveEvents(events);
-  }, [events]);
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -63,7 +57,6 @@ export function CalendarOverview({
 
       setLiveEvents(result.events);
       toast.success("Evento apagado.");
-      router.refresh();
     });
   }
 

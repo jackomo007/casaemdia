@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -28,7 +27,6 @@ export function CalendarEventForm({
   onCreated?: (events: CalendarEventItem[]) => void;
   referenceDate: string;
 }) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const defaultStartsAt = getDefaultStartsAt(referenceDate);
   const form = useForm<CalendarEventSchema>({
@@ -53,7 +51,6 @@ export function CalendarEventForm({
 
       onCreated?.(result.events);
       toast.success("Evento adicionado.");
-      router.refresh();
       form.reset({
         title: "",
         description: "",

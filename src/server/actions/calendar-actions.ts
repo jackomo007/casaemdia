@@ -7,6 +7,7 @@ import { calendarEventSchema } from "@/lib/validations/calendar";
 import {
   createCalendarEvent,
   deleteCalendarEvent,
+  getCalendarEvents,
 } from "@/server/services/calendar-service";
 
 const calendarEventDeleteSchema = z.object({
@@ -15,18 +16,20 @@ const calendarEventDeleteSchema = z.object({
 
 export async function createCalendarEventAction(values: unknown) {
   const payload = calendarEventSchema.parse(values);
-  const events = await createCalendarEvent(payload);
+  await createCalendarEvent(payload);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/agenda");
+  const events = await getCalendarEvents();
 
   return { success: true, events };
 }
 
 export async function deleteCalendarEventAction(values: unknown) {
   const payload = calendarEventDeleteSchema.parse(values);
-  const events = await deleteCalendarEvent(payload.id);
+  await deleteCalendarEvent(payload.id);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/agenda");
+  const events = await getCalendarEvents();
 
   return { success: true, events };
 }
