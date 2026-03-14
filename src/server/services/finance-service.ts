@@ -80,6 +80,13 @@ function getMonthRange(monthKey: string) {
   return { start, end };
 }
 
+function getYearRange(year: number) {
+  return {
+    start: new Date(year, 0, 1),
+    end: new Date(year + 1, 0, 1),
+  };
+}
+
 function getMonthDay(dateValue: string) {
   const [, , day] = toDateOnly(dateValue).split("-");
   return Number(day);
@@ -104,6 +111,38 @@ function getYearMonthKeys(year: number) {
     const month = String(index + 1).padStart(2, "0");
     return `${year}-${month}`;
   });
+}
+
+async function getFilledMonthKeysInYear(householdId: string, year: number) {
+  const { start, end } = getYearRange(year);
+  const [incomeEntries, expenseEntries] = await Promise.all([
+    prisma.incomeEntry.findMany({
+      where: {
+        householdId,
+        competenceDate: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: { competenceDate: true },
+    }),
+    prisma.expenseEntry.findMany({
+      where: {
+        householdId,
+        competenceDate: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: { competenceDate: true },
+    }),
+  ]);
+
+  return new Set(
+    [...incomeEntries, ...expenseEntries].map((entry) =>
+      toDateOnly(entry.competenceDate).slice(0, 7),
+    ),
+  );
 }
 
 function inferAccountType(name: string) {
@@ -518,14 +557,17 @@ export async function syncFinanceMonthPlan(input: SyncFinanceMonthInput) {
 
   const householdId = workspace.household.id;
   const userId = workspace.user.id;
-  const [incomeCount, expenseCount] = await Promise.all([
-    prisma.incomeEntry.count({ where: { householdId } }),
-    prisma.expenseEntry.count({ where: { householdId } }),
-  ]);
-  const isFirstSetup = incomeCount + expenseCount === 0;
   const [yearValue] = input.monthKey.split("-");
-  const targetMonthKeys = isFirstSetup
-    ? getYearMonthKeys(Number(yearValue))
+  const year = Number(yearValue);
+  const filledMonthKeys = await getFilledMonthKeysInYear(householdId, year);
+  const shouldCopyToEmptyMonths =
+    filledMonthKeys.size === 0 ||
+    (filledMonthKeys.size === 1 && filledMonthKeys.has(input.monthKey));
+  const targetMonthKeys = shouldCopyToEmptyMonths
+    ? getYearMonthKeys(year).filter(
+        (monthKey) =>
+          monthKey === input.monthKey || !filledMonthKeys.has(monthKey),
+      )
     : [input.monthKey];
 
   for (const monthKey of targetMonthKeys) {

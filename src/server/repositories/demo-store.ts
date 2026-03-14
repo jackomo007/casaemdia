@@ -190,6 +190,16 @@ function getYearMonthKeys(year: number) {
   });
 }
 
+function getFilledMonthKeysInYear(entries: FinanceEntry[], year: number) {
+  return new Set(
+    entries
+      .map((entry) =>
+        getMonthKeyFromDateValue(entry.competenceDate || entry.dueDate),
+      )
+      .filter((monthKey) => monthKey.startsWith(`${year}-`)),
+  );
+}
+
 function upsertMonthlyFlowEntry(
   workspace: HouseholdWorkspace,
   input: CreateFinanceEntryInput,
@@ -272,10 +282,20 @@ export function replaceFinanceMonthEntries(
   input: SyncFinanceMonthInput,
 ): HouseholdWorkspace {
   const workspace = getWorkspace(context);
-  const isFirstSetup = workspace.finance.entries.length === 0;
   const [yearValue] = input.monthKey.split("-");
-  const targetMonths = isFirstSetup
-    ? getYearMonthKeys(Number(yearValue))
+  const year = Number(yearValue);
+  const filledMonthKeys = getFilledMonthKeysInYear(
+    workspace.finance.entries,
+    year,
+  );
+  const shouldCopyToEmptyMonths =
+    filledMonthKeys.size === 0 ||
+    (filledMonthKeys.size === 1 && filledMonthKeys.has(input.monthKey));
+  const targetMonths = shouldCopyToEmptyMonths
+    ? getYearMonthKeys(year).filter(
+        (monthKey) =>
+          monthKey === input.monthKey || !filledMonthKeys.has(monthKey),
+      )
     : [input.monthKey];
   const remainingEntries = workspace.finance.entries.filter(
     (entry) =>

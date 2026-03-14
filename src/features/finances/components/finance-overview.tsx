@@ -63,6 +63,18 @@ export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
       getMonthKeyFromDateValue(entry.competenceDate || entry.dueDate) ===
       activeMonth,
   );
+  const activeYear = activeMonth.slice(0, 4);
+  const filledMonthsInActiveYear = new Set(
+    data.entries
+      .map((entry) =>
+        getMonthKeyFromDateValue(entry.competenceDate || entry.dueDate),
+      )
+      .filter((monthKey) => monthKey.startsWith(`${activeYear}-`)),
+  );
+  const shouldCopyToYearOnSave =
+    filledMonthsInActiveYear.size === 0 ||
+    (filledMonthsInActiveYear.size === 1 &&
+      filledMonthsInActiveYear.has(activeMonth));
 
   return (
     <div className="space-y-6">
@@ -100,6 +112,7 @@ export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
         selectedMonth={activeMonth}
         currentEntries={filteredEntries}
         hasAnyEntries={data.entries.length > 0}
+        shouldCopyToYearOnSave={shouldCopyToYearOnSave}
       />
 
       {hasMonthlyFlowData ? (
