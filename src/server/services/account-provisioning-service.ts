@@ -2,6 +2,8 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
+import { Prisma } from "@prisma/client";
+
 import { prisma, isDatabaseConfigured } from "@/lib/db/prisma";
 
 type ProvisionUserInput = {
@@ -22,6 +24,44 @@ function slugify(value: string) {
 
 function getFirstName(fullName?: string | null) {
   return fullName?.trim().split(/\s+/)[0] || "Família";
+}
+
+function isMissingUserPreferenceTable(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2021" &&
+    error.message.includes("public.UserPreference")
+  );
+}
+
+async function ensureDefaultUserPreference(
+  householdId: string,
+  userId: string,
+) {
+  try {
+    await prisma.userPreference.upsert({
+      where: {
+        householdId_userId: {
+          householdId,
+          userId,
+        },
+      },
+      update: {},
+      create: {
+        householdId,
+        userId,
+      },
+    });
+  } catch (error) {
+    if (isMissingUserPreferenceTable(error)) {
+      console.warn(
+        "Skipping default user preference creation because the UserPreference table is missing.",
+      );
+      return;
+    }
+
+    throw error;
+  }
 }
 
 export async function provisionUserWorkspace(input: ProvisionUserInput) {
@@ -72,11 +112,6 @@ export async function provisionUserWorkspace(input: ProvisionUserInput) {
             isPrimaryContact: true,
           },
         },
-        userPreferences: {
-          create: {
-            userId: user.id,
-          },
-        },
         trialAccesses: {
           create: {
             emailNormalized: normalizedEmail,
@@ -88,6 +123,8 @@ export async function provisionUserWorkspace(input: ProvisionUserInput) {
       },
     });
   }
+
+  await ensureDefaultUserPreference(household.id, user.id);
 
   return {
     user,
