@@ -1,22 +1,20 @@
 "use client";
 
 import {
-  CircleDollarSign,
-  HandCoins,
-  House,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
   Plus,
-  ShieldAlert,
+  RotateCcw,
+  Save,
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { Dispatch, ReactNode, SetStateAction } from "react";
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { SectionHeader } from "@/components/shared/section-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -25,34 +23,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getMonthDate as getDateForMonth } from "@/lib/utils/date";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { getMonthDate } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/formatters";
-import { createFinanceSheetEntriesAction } from "@/server/actions/finance-actions";
-import type { FinanceEntry } from "@/types";
+import { syncFinanceMonthPlanAction } from "@/server/actions/finance-actions";
+import type { FinanceEntry, FinancialStatus } from "@/types";
 
-type PlanningSection = "fixed" | "negotiable" | "income";
-type IncomeType = "CLT" | "PJ" | "Extra";
+type PlanningSection = "income" | "fixed" | "negotiable";
 
 type PlanningRow = {
-  id: string;
-  label: string;
+  id?: string;
+  clientId: string;
+  title: string;
   amount: string;
   dueDate: string;
+  account: string;
+  status: FinancialStatus;
   section: PlanningSection;
-  incomeType?: IncomeType;
+  category: string;
+  member: string;
+  paymentDate?: string;
 };
 
-const DEFAULT_AMOUNT = "0,00";
+const statusLabel: Record<FinancialStatus, string> = {
+  paid: "Pago",
+  pending: "Pendente",
+  overdue: "Atrasado",
+};
 
-function getMonthStart(monthKey: string) {
-  return getDateForMonth(monthKey, 1);
+const SECTION_ORDER: PlanningSection[] = ["income", "fixed", "negotiable"];
+
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
 }
 
-function getMonthDate(monthKey: string, day: number) {
-  return getDateForMonth(monthKey, day);
-}
-
-function createRowId(section: PlanningSection) {
+function createClientId(section: PlanningSection) {
   if (
     typeof crypto !== "undefined" &&
     typeof crypto.randomUUID === "function"
@@ -63,163 +79,55 @@ function createRowId(section: PlanningSection) {
   return `${section}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function createPlanningRow(
-  section: PlanningSection,
-  selectedMonth: string,
-): PlanningRow {
+function parseAmount(value: string) {
+  const raw = value.trim();
+
+  if (!raw) {
+    return 0;
+  }
+
+  const normalized = raw.includes(",")
+    ? raw.replace(/\./g, "").replace(",", ".")
+    : raw;
+  const parsed = Number(normalized);
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getSectionMeta(section: PlanningSection) {
   if (section === "income") {
     return {
-      id: createRowId(section),
-      label: "",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 20),
-      section,
-      incomeType: "Extra",
+      title: "Entradas do mês",
+      tone: "bg-[#39A74E]",
+      text: "text-slate-950",
+      emptyLabel: "Sem entradas neste mês ainda.",
+    };
+  }
+
+  if (section === "fixed") {
+    return {
+      title: "Custos que não podem travar",
+      tone: "bg-[#6FA4D7]",
+      text: "text-slate-950",
+      emptyLabel: "Sem custos essenciais neste mês.",
     };
   }
 
   return {
-    id: createRowId(section),
-    label: "",
-    amount: DEFAULT_AMOUNT,
-    dueDate:
-      section === "fixed"
-        ? getMonthDate(selectedMonth, 25)
-        : getMonthDate(selectedMonth, 28),
-    section,
+    title: "Gastos negociáveis",
+    tone: "bg-[#C782A7]",
+    text: "text-slate-950",
+    emptyLabel: "Sem gastos negociáveis neste mês.",
   };
-}
-
-function createFixedRowsTemplate(selectedMonth: string): PlanningRow[] {
-  return [
-    {
-      id: "fixed-rent",
-      label: "Aluguel",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 10),
-      section: "fixed",
-    },
-    {
-      id: "fixed-water",
-      label: "Água",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 12),
-      section: "fixed",
-    },
-    {
-      id: "fixed-phone",
-      label: "Plano de telefones",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 15),
-      section: "fixed",
-    },
-    {
-      id: "fixed-energy",
-      label: "Energia",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 18),
-      section: "fixed",
-    },
-    {
-      id: "fixed-internet",
-      label: "Internet",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 20),
-      section: "fixed",
-    },
-  ];
-}
-
-function createNegotiableRowsTemplate(selectedMonth: string): PlanningRow[] {
-  return [
-    {
-      id: "neg-credit-card",
-      label: "Cartão de crédito",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 15),
-      section: "negotiable",
-    },
-    {
-      id: "neg-loan",
-      label: "Empréstimo",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 20),
-      section: "negotiable",
-    },
-    {
-      id: "neg-installment",
-      label: "Parcelamento / carne",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 22),
-      section: "negotiable",
-    },
-    {
-      id: "neg-tax",
-      label: "Imposto / atraso",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 25),
-      section: "negotiable",
-    },
-    {
-      id: "neg-limit",
-      label: "Cheque especial / limite",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 28),
-      section: "negotiable",
-    },
-  ];
-}
-
-function createIncomeRowsTemplate(selectedMonth: string): PlanningRow[] {
-  return [
-    {
-      id: "income-clt-main",
-      label: "Renda principal",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 5),
-      section: "income",
-      incomeType: "CLT",
-    },
-    {
-      id: "income-pj",
-      label: "Projeto PJ",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 15),
-      section: "income",
-      incomeType: "PJ",
-    },
-    {
-      id: "income-extra",
-      label: "Renda extra",
-      amount: DEFAULT_AMOUNT,
-      dueDate: getMonthDate(selectedMonth, 20),
-      section: "income",
-      incomeType: "Extra",
-    },
-  ];
-}
-
-function parseAmount(value: string) {
-  const normalized = value.replace(",", ".").trim();
-  if (!normalized) {
-    return 0;
-  }
-
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function normalizeText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase();
 }
 
 function inferExpenseSection(
   entry: FinanceEntry,
 ): Exclude<PlanningSection, "income"> {
+  if (typeof entry.isFixed === "boolean") {
+    return entry.isFixed ? "fixed" : "negotiable";
+  }
+
   const normalizedCategory = normalizeText(entry.category);
   const normalizedAccount = normalizeText(entry.account);
 
@@ -239,350 +147,353 @@ function inferExpenseSection(
   return "fixed";
 }
 
-function getRowTotal(rows: PlanningRow[]) {
-  return rows.reduce((total, row) => total + parseAmount(row.amount), 0);
+function getDefaultCategory(section: PlanningSection) {
+  if (section === "income") {
+    return "Receita";
+  }
+
+  return section === "fixed" ? "Essencial" : "Negociável";
 }
 
-function buildEntries(rows: PlanningRow[], selectedMonth: string) {
-  const competenceDate = getMonthStart(selectedMonth);
-
-  return rows
-    .filter((row) => parseAmount(row.amount) > 0)
-    .map((row) => ({
-      title: row.label.trim(),
-      amount: parseAmount(row.amount),
-      kind: row.section === "income" ? "income" : "expense",
-      category:
-        row.section === "fixed"
-          ? "Essencial"
-          : row.section === "negotiable"
-            ? "Negociável"
-            : (row.incomeType ?? "Extra"),
-      member: row.section === "fixed" ? "Casa" : "Responsável",
-      dueDate: row.dueDate || competenceDate,
-      competenceDate,
-      account:
-        row.section === "income"
-          ? row.incomeType === "PJ"
-            ? "Conta PJ"
-            : "Conta principal"
-          : row.section === "fixed"
-            ? "Planejamento essencial"
-            : "Renegociação",
-    }));
+function getDefaultMember(section: PlanningSection) {
+  return section === "income" ? "Responsável" : "Casa";
 }
 
-function getTips({
-  totalIncome,
-  totalFixed,
-  totalNegotiable,
-  balance,
-}: {
-  totalIncome: number;
-  totalFixed: number;
-  totalNegotiable: number;
-  balance: number;
-}) {
-  const tips = [];
-
-  if (balance < 0) {
-    tips.push(
-      "O fechamento está negativo. Priorize aluguel, água, luz, comida e internet antes de tentar cobrir cartão ou limite.",
-    );
+function getDefaultAccount(section: PlanningSection, title: string) {
+  if (section === "income") {
+    return normalizeText(title).includes("pj") ? "Conta PJ" : "Conta principal";
   }
 
-  if (totalNegotiable > 0) {
-    tips.push(
-      "Dívidas negociáveis pedem proposta única e realista. Melhor uma parcela que cabe todo mês do que um acordo que quebra no segundo boleto.",
-    );
-  }
-
-  if (totalIncome > 0 && totalNegotiable > totalIncome * 0.3) {
-    tips.push(
-      "Quando a dívida negociável passa de 30% da renda, vale buscar desconto para quitação, pausa de juros ou alongamento do prazo.",
-    );
-  }
-
-  if (totalFixed > 0 && totalIncome > 0 && totalFixed / totalIncome > 0.6) {
-    tips.push(
-      "Seus custos essenciais estão pesados. Revise contratos recorrentes e corte o que não trava a operação da casa.",
-    );
-  }
-
-  tips.push(
-    "Compra necessária pode ser parcelada para preservar caixa, mas tente antecipar parcelas quando entrar renda extra e o desconto compensar.",
-  );
-  tips.push(
-    "Se o nome já está sujo, concentre energia em renegociar poucas frentes importantes e evitar novas bolas de neve ao mesmo tempo.",
-  );
-
-  return tips;
+  return section === "fixed" ? "Planejamento essencial" : "Renegociação";
 }
 
-function PlanningTable({
-  title,
-  description,
-  badge,
-  icon,
-  rows,
-  addButtonLabel,
-  onAddRow,
-  onRemoveRow,
-  onChange,
-  incomeMode = false,
-}: {
-  title: string;
-  description: string;
-  badge: string;
-  icon: ReactNode;
-  rows: PlanningRow[];
-  addButtonLabel: string;
-  onAddRow: () => void;
-  onRemoveRow: (id: string) => void;
-  onChange: (
-    id: string,
-    key: "label" | "amount" | "dueDate" | "incomeType",
-    value: string,
-  ) => void;
-  incomeMode?: boolean;
-}) {
-  return (
-    <Card className="rounded-[28px] border-white/80 bg-white/95 shadow-[0_22px_60px_-48px_rgba(80,64,153,0.34)]">
-      <CardContent className="space-y-5 p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <Badge variant="secondary" className="rounded-full px-3 py-1">
-              {badge}
-            </Badge>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-950">{title}</h3>
-              <p className="text-sm leading-6 text-slate-500">{description}</p>
-            </div>
-          </div>
-          <div className="bg-primary/10 text-primary flex h-11 w-11 items-center justify-center rounded-2xl">
-            {icon}
-          </div>
-        </div>
+function createPlanningRow(
+  section: PlanningSection,
+  selectedMonth: string,
+  overrides?: Partial<PlanningRow>,
+): PlanningRow {
+  const fallbackTitle =
+    section === "income"
+      ? "Nova entrada"
+      : section === "fixed"
+        ? "Nova conta essencial"
+        : "Novo gasto negociável";
+  const title = overrides?.title ?? fallbackTitle;
 
-        <div className="space-y-3">
-          {rows.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-6 text-sm text-slate-500">
-              Nenhuma linha nesta seção. Use o botão abaixo para adicionar.
-            </div>
-          ) : null}
-          {rows.map((row, index) => (
-            <div
-              key={row.id}
-              className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-3"
-            >
-              <div className="flex items-center gap-2">
-                <Input
-                  aria-label={`${title} nome ${index + 1}`}
-                  value={row.label}
-                  onChange={(event) =>
-                    onChange(row.id, "label", event.target.value)
-                  }
-                  placeholder="Descreva esta linha"
-                  className="rounded-2xl border-white bg-white"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label={`Remover ${title} ${index + 1}`}
-                  className="shrink-0 rounded-2xl border-white bg-white text-slate-500 hover:text-rose-600"
-                  onClick={() => onRemoveRow(row.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div
-                className={
-                  incomeMode
-                    ? "grid gap-3 sm:grid-cols-[0.9fr_1fr_1fr]"
-                    : "grid gap-3 sm:grid-cols-[1fr_1fr]"
-                }
-              >
-                {incomeMode ? (
-                  <Select
-                    value={row.incomeType ?? "Extra"}
-                    onValueChange={(value) =>
-                      onChange(row.id, "incomeType", value ?? "Extra")
-                    }
-                  >
-                    <SelectTrigger
-                      aria-label={`${title} tipo ${index + 1}`}
-                      className="rounded-2xl border-white bg-white"
-                    >
-                      <SelectValue placeholder="Tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CLT">CLT</SelectItem>
-                      <SelectItem value="PJ">PJ</SelectItem>
-                      <SelectItem value="Extra">Extra</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : null}
-                <Input
-                  aria-label={`${title} vencimento ${index + 1}`}
-                  type="date"
-                  value={row.dueDate}
-                  onChange={(event) =>
-                    onChange(row.id, "dueDate", event.target.value)
-                  }
-                  className="rounded-2xl border-white bg-white"
-                />
-                <Input
-                  aria-label={`${title} valor ${index + 1}`}
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  value={row.amount}
-                  onChange={(event) =>
-                    onChange(row.id, "amount", event.target.value)
-                  }
-                  className="rounded-2xl border-white bg-white"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+  return {
+    id: overrides?.id,
+    clientId: overrides?.clientId ?? createClientId(section),
+    title,
+    amount: overrides?.amount ?? "0,00",
+    dueDate:
+      overrides?.dueDate ??
+      getMonthDate(
+        selectedMonth,
+        section === "income" ? 5 : section === "fixed" ? 10 : 15,
+      ),
+    account: overrides?.account ?? getDefaultAccount(section, title),
+    status: overrides?.status ?? "pending",
+    section,
+    category: overrides?.category ?? getDefaultCategory(section),
+    member: overrides?.member ?? getDefaultMember(section),
+    paymentDate: overrides?.paymentDate,
+  };
+}
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full rounded-2xl border-dashed"
-          onClick={onAddRow}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {addButtonLabel}
-        </Button>
-      </CardContent>
-    </Card>
+function createInitialTemplate(selectedMonth: string) {
+  return [
+    createPlanningRow("income", selectedMonth, {
+      title: "CLT",
+      dueDate: getMonthDate(selectedMonth, 5),
+    }),
+    createPlanningRow("income", selectedMonth, {
+      title: "Auxílio Home Office",
+      dueDate: getMonthDate(selectedMonth, 10),
+    }),
+    createPlanningRow("income", selectedMonth, {
+      title: "PJ",
+      account: "Conta PJ",
+      dueDate: getMonthDate(selectedMonth, 15),
+    }),
+    createPlanningRow("fixed", selectedMonth, {
+      title: "Aluguel",
+      dueDate: getMonthDate(selectedMonth, 10),
+    }),
+    createPlanningRow("fixed", selectedMonth, {
+      title: "Água",
+      dueDate: getMonthDate(selectedMonth, 12),
+    }),
+    createPlanningRow("fixed", selectedMonth, {
+      title: "Plano telefones",
+      dueDate: getMonthDate(selectedMonth, 15),
+    }),
+    createPlanningRow("negotiable", selectedMonth, {
+      title: "Cartão de crédito",
+      dueDate: getMonthDate(selectedMonth, 15),
+    }),
+    createPlanningRow("negotiable", selectedMonth, {
+      title: "Empréstimo",
+      dueDate: getMonthDate(selectedMonth, 20),
+    }),
+    createPlanningRow("negotiable", selectedMonth, {
+      title: "Parcelamento / carnê",
+      dueDate: getMonthDate(selectedMonth, 22),
+    }),
+  ];
+}
+
+function mapEntriesToRows(entries: FinanceEntry[]) {
+  return [...entries]
+    .sort((left, right) => {
+      const leftSection =
+        left.kind === "income" ? "income" : inferExpenseSection(left);
+      const rightSection =
+        right.kind === "income" ? "income" : inferExpenseSection(right);
+      const sectionDiff =
+        SECTION_ORDER.indexOf(leftSection) -
+        SECTION_ORDER.indexOf(rightSection);
+
+      if (sectionDiff !== 0) {
+        return sectionDiff;
+      }
+
+      return left.dueDate.localeCompare(right.dueDate);
+    })
+    .map((entry) =>
+      createPlanningRow(
+        entry.kind === "income" ? "income" : inferExpenseSection(entry),
+        entry.competenceDate.slice(0, 7),
+        {
+          id: entry.id,
+          clientId: entry.id,
+          title: entry.title,
+          amount: String(entry.amount).replace(".", ","),
+          dueDate: entry.dueDate,
+          account: entry.account,
+          status: entry.status,
+          category: entry.category,
+          member: entry.member,
+          paymentDate: entry.paymentDate,
+        },
+      ),
+    );
+}
+
+function buildRows(
+  selectedMonth: string,
+  currentEntries: FinanceEntry[],
+  hasAnyEntries: boolean,
+) {
+  if (currentEntries.length) {
+    return mapEntriesToRows(currentEntries);
+  }
+
+  if (!hasAnyEntries) {
+    return createInitialTemplate(selectedMonth);
+  }
+
+  return [];
+}
+
+function cloneRows(rows: PlanningRow[]) {
+  return rows.map((row) => ({ ...row }));
+}
+
+function serializeRows(rows: PlanningRow[]) {
+  return JSON.stringify(
+    rows.map((row) => ({
+      id: row.id ?? null,
+      title: row.title,
+      amount: row.amount,
+      dueDate: row.dueDate,
+      account: row.account,
+      status: row.status,
+      section: row.section,
+      category: row.category,
+      member: row.member,
+      paymentDate: row.paymentDate ?? null,
+    })),
   );
+}
+
+function getReminder(rows: PlanningRow[]) {
+  const expenseRows = rows.filter((row) => row.section !== "income");
+  const paidTotal = expenseRows
+    .filter((row) => row.status === "paid")
+    .reduce((total, row) => total + parseAmount(row.amount), 0);
+  const pendingTotal = expenseRows
+    .filter((row) => row.status !== "paid")
+    .reduce((total, row) => total + parseAmount(row.amount), 0);
+  const essentialPending = expenseRows
+    .filter((row) => row.status !== "paid" && row.section === "fixed")
+    .reduce((total, row) => total + parseAmount(row.amount), 0);
+  const negotiablePending = expenseRows
+    .filter((row) => row.status !== "paid" && row.section === "negotiable")
+    .reduce((total, row) => total + parseAmount(row.amount), 0);
+
+  const reminderTone =
+    essentialPending > 0
+      ? {
+          wrapper:
+            "border-rose-200 bg-[linear-gradient(180deg,#fff7f7,#fff0f0)]",
+          iconWrapper: "bg-rose-100 text-rose-600",
+          title: "Não esquece dos essenciais",
+          body:
+            negotiablePending > 0
+              ? `Ainda faltam ${formatCurrency(essentialPending)} em contas essenciais e ${formatCurrency(negotiablePending)} em gastos negociáveis. Priorize o essencial primeiro.`
+              : `Ainda faltam ${formatCurrency(essentialPending)} em contas essenciais. Priorize esse pagamento para a casa não travar.`,
+          icon: AlertTriangle,
+        }
+      : negotiablePending > 0
+        ? {
+            wrapper:
+              "border-amber-200 bg-[linear-gradient(180deg,#fffdf7,#fff8eb)]",
+            iconWrapper: "bg-amber-100 text-amber-600",
+            title: "Pendências renegociáveis",
+            body: `Ainda faltam ${formatCurrency(negotiablePending)} em gastos negociáveis. Se apertar, renegocie antes de virar outra bola de neve.`,
+            icon: Clock3,
+          }
+        : {
+            wrapper:
+              "border-emerald-200 bg-[linear-gradient(180deg,#f7fffb,#effcf5)]",
+            iconWrapper: "bg-emerald-100 text-emerald-600",
+            title: "Mês em dia",
+            body: "As despesas deste mês estão marcadas como pagas na planilha.",
+            icon: CheckCircle2,
+          };
+
+  return {
+    paidTotal,
+    pendingTotal,
+    reminderTone,
+  };
+}
+
+function formatMonthLabel(monthKey: string) {
+  const [year, month] = monthKey.split("-");
+  const date = new Date(Number(year), Number(month) - 1, 1);
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 export function FinancePlanningSheet({
   selectedMonth,
   currentEntries,
+  hasAnyEntries,
 }: {
   selectedMonth: string;
   currentEntries: FinanceEntry[];
+  hasAnyEntries: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [fixedRows, setFixedRows] = useState(() =>
-    createFixedRowsTemplate(selectedMonth),
+  const [rows, setRows] = useState(() =>
+    buildRows(selectedMonth, currentEntries, hasAnyEntries),
   );
-  const [negotiableRows, setNegotiableRows] = useState(() =>
-    createNegotiableRowsTemplate(selectedMonth),
-  );
-  const [incomeRows, setIncomeRows] = useState(() =>
-    createIncomeRowsTemplate(selectedMonth),
+  const [savedRows, setSavedRows] = useState(() =>
+    cloneRows(buildRows(selectedMonth, currentEntries, hasAnyEntries)),
   );
 
-  const totalFixed = getRowTotal(fixedRows);
-  const totalNegotiable = getRowTotal(negotiableRows);
-  const totalIncome = getRowTotal(incomeRows);
-  const totalExpense = totalFixed + totalNegotiable;
-  const registeredFixed = currentEntries
-    .filter(
-      (entry) =>
-        entry.kind === "expense" && inferExpenseSection(entry) === "fixed",
-    )
-    .reduce((total, entry) => total + entry.amount, 0);
-  const registeredNegotiable = currentEntries
-    .filter(
-      (entry) =>
-        entry.kind === "expense" && inferExpenseSection(entry) === "negotiable",
-    )
-    .reduce((total, entry) => total + entry.amount, 0);
-  const registeredExpense = currentEntries
-    .filter((entry) => entry.kind === "expense")
-    .reduce((total, entry) => total + entry.amount, 0);
-  const registeredIncome = currentEntries
-    .filter((entry) => entry.kind === "income")
-    .reduce((total, entry) => total + entry.amount, 0);
-  const combinedFixed = registeredFixed + totalFixed;
-  const combinedNegotiable = registeredNegotiable + totalNegotiable;
-  const combinedIncome = registeredIncome + totalIncome;
-  const projectedExpense = registeredExpense + totalExpense;
-  const projectedBalance = combinedIncome - projectedExpense;
-  const tips = getTips({
-    totalIncome: combinedIncome,
-    totalFixed: combinedFixed,
-    totalNegotiable: combinedNegotiable,
-    balance: projectedBalance,
-  });
+  const hasUnsavedChanges = serializeRows(rows) !== serializeRows(savedRows);
+  const monthLabel = formatMonthLabel(selectedMonth);
+  const reminder = getReminder(rows);
+  const ReminderIcon = reminder.reminderTone.icon;
 
-  function updateRows(
-    setter: Dispatch<SetStateAction<PlanningRow[]>>,
-    id: string,
-    key: "label" | "amount" | "dueDate" | "incomeType",
+  function updateRow(
+    clientId: string,
+    key: keyof Pick<
+      PlanningRow,
+      "title" | "amount" | "dueDate" | "account" | "status"
+    >,
     value: string,
   ) {
-    setter((currentRows) =>
-      currentRows.map((row) =>
-        row.id === id
+    setRows((current) =>
+      current.map((row) =>
+        row.clientId === clientId
           ? {
               ...row,
               [key]: value,
+              paymentDate:
+                key === "status"
+                  ? value === "paid"
+                    ? (row.paymentDate ?? new Date().toISOString())
+                    : undefined
+                  : row.paymentDate,
             }
           : row,
       ),
     );
   }
 
-  function resetSheet() {
-    setFixedRows(createFixedRowsTemplate(selectedMonth));
-    setNegotiableRows(createNegotiableRowsTemplate(selectedMonth));
-    setIncomeRows(createIncomeRowsTemplate(selectedMonth));
-  }
-
-  function addRow(
-    setter: Dispatch<SetStateAction<PlanningRow[]>>,
-    section: PlanningSection,
-  ) {
-    setter((currentRows) => [
-      ...currentRows,
+  function addRow(section: PlanningSection) {
+    setRows((current) => [
+      ...current,
       createPlanningRow(section, selectedMonth),
     ]);
   }
 
-  function removeRow(
-    setter: Dispatch<SetStateAction<PlanningRow[]>>,
-    id: string,
-  ) {
-    setter((currentRows) => currentRows.filter((row) => row.id !== id));
+  function removeRow(clientId: string) {
+    setRows((current) => current.filter((row) => row.clientId !== clientId));
+  }
+
+  function resetRows() {
+    setRows(cloneRows(savedRows));
+  }
+
+  function getRowsBySection(section: PlanningSection) {
+    return rows.filter((row) => row.section === section);
   }
 
   function handleSave() {
-    const entries = buildEntries(
-      [...fixedRows, ...negotiableRows, ...incomeRows],
-      selectedMonth,
-    );
+    const rowsToPersist = rows
+      .filter((row) => parseAmount(row.amount) > 0)
+      .map((row) => ({
+        id: row.id,
+        title: row.title.trim(),
+        amount: parseAmount(row.amount),
+        dueDate: row.dueDate,
+        account: row.account.trim(),
+        status: row.status,
+        section: row.section,
+        category: row.category.trim() || getDefaultCategory(row.section),
+        member: row.member.trim() || getDefaultMember(row.section),
+        paymentDate: row.status === "paid" ? row.paymentDate : undefined,
+      }));
 
-    if (!entries.length) {
+    if (!rowsToPersist.length && !hasAnyEntries) {
       toast.error("Preencha ao menos uma linha com valor maior que zero.");
       return;
     }
 
-    if (entries.some((entry) => entry.title.trim().length < 2)) {
-      toast.error(
-        "Cada linha salva precisa ter um nome com pelo menos 2 letras.",
-      );
+    if (
+      rowsToPersist.some(
+        (row) => row.title.length < 2 || row.account.length < 2 || !row.dueDate,
+      )
+    ) {
+      toast.error("Revise as linhas preenchidas antes de salvar.");
       return;
     }
 
     startTransition(async () => {
-      const result = await createFinanceSheetEntriesAction(entries);
+      const result = await syncFinanceMonthPlanAction({
+        monthKey: selectedMonth,
+        rows: rowsToPersist,
+      });
 
       if (!result.success) {
-        toast.error("Não foi possível salvar a planilha rápida.");
+        toast.error("Não foi possível salvar a planilha deste mês.");
         return;
       }
 
-      toast.success("Linhas salvas nos lançamentos.");
-      resetSheet();
+      setSavedRows(cloneRows(rows));
+      toast.success(
+        hasAnyEntries
+          ? "Planilha do mês atualizada."
+          : "Base inicial salva e copiada para os outros meses do ano.",
+      );
       router.refresh();
     });
   }
@@ -590,154 +501,265 @@ export function FinancePlanningSheet({
   return (
     <section className="space-y-4">
       <SectionHeader
-        title="Preenchimento rápido"
-        description="Digite como em uma planilha: primeiro o essencial, depois as dívidas negociáveis e por fim as entradas CLT, PJ ou extras."
+        title="Visão planilha"
+        description="Edite a própria tabela por linha. Entradas vêm primeiro, depois o que não pode travar e por fim o que pode ser negociado."
         action={
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
+              disabled={isPending || !hasUnsavedChanges}
               className="rounded-2xl"
-              onClick={resetSheet}
+              onClick={resetRows}
             >
-              Limpar grade
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Desfazer alterações
             </Button>
             <Button
               type="button"
-              disabled={isPending}
+              disabled={isPending || !hasUnsavedChanges}
               className="rounded-2xl"
               onClick={handleSave}
             >
-              {isPending ? "Salvando..." : "Salvar linhas preenchidas"}
+              <Save className="mr-2 h-4 w-4" />
+              {isPending
+                ? "Salvando..."
+                : hasAnyEntries
+                  ? "Salvar alterações do mês"
+                  : "Salvar base e copiar para os meses"}
             </Button>
           </div>
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <PlanningTable
-          title="Custos que não podem travar"
-          description="Moradia e contas básicas entram primeiro para mostrar o custo mínimo da casa."
-          badge="Essencial"
-          icon={<House className="h-5 w-5" />}
-          rows={fixedRows}
-          addButtonLabel="Adicionar custo essencial"
-          onAddRow={() => addRow(setFixedRows, "fixed")}
-          onRemoveRow={(id) => removeRow(setFixedRows, id)}
-          onChange={(id, key, value) =>
-            updateRows(setFixedRows, id, key, value)
-          }
-        />
-        <PlanningTable
-          title="Gastos negociáveis"
-          description="Cartão, empréstimo e atrasos entram separados para ajudar na estratégia de saída."
-          badge="Renegociável"
-          icon={<HandCoins className="h-5 w-5" />}
-          rows={negotiableRows}
-          addButtonLabel="Adicionar gasto negociável"
-          onAddRow={() => addRow(setNegotiableRows, "negotiable")}
-          onRemoveRow={(id) => removeRow(setNegotiableRows, id)}
-          onChange={(id, key, value) =>
-            updateRows(setNegotiableRows, id, key, value)
-          }
-        />
-        <PlanningTable
-          title="Entradas do mês"
-          description="Classifique por CLT, PJ ou extra e veja o saldo disponível sem precisar montar fórmula."
-          badge="Receita"
-          icon={<CircleDollarSign className="h-5 w-5" />}
-          rows={incomeRows}
-          addButtonLabel="Adicionar entrada"
-          onAddRow={() => addRow(setIncomeRows, "income")}
-          onRemoveRow={(id) => removeRow(setIncomeRows, id)}
-          onChange={(id, key, value) =>
-            updateRows(setIncomeRows, id, key, value)
-          }
-          incomeMode
-        />
-      </div>
+      {!hasAnyEntries ? (
+        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          No primeiro preenchimento salvo em {monthLabel}, a mesma base será
+          copiada para todos os meses de {selectedMonth.slice(0, 4)}. Depois
+          disso cada mês passa a ser editado manualmente.
+        </div>
+      ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
-        <Card className="rounded-[28px] border-white/80 bg-[linear-gradient(180deg,#ffffff,#f7f5ff)] shadow-[0_22px_60px_-48px_rgba(80,64,153,0.34)]">
-          <CardContent className="space-y-4 p-5">
-            <SectionHeader
-              title="Leitura automática"
-              description="Os totais abaixo combinam a grade atual com o que já está lançado no mês."
-            />
+      <div className="border-border/70 overflow-hidden rounded-[28px] border bg-white/90 shadow-[0_20px_56px_-44px_rgba(80,64,153,0.3)]">
+        <div className="border-b border-slate-200 px-5 py-4 text-sm text-slate-500">
+          Mostrando lançamentos de {monthLabel}
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
+                Lançamento
+              </TableHead>
+              <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
+                Vencimento
+              </TableHead>
+              <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
+                Valor
+              </TableHead>
+              <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
+                Conta
+              </TableHead>
+              <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
+                Status
+              </TableHead>
+              <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
+                Ações
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {SECTION_ORDER.map((section) => {
+              const sectionMeta = getSectionMeta(section);
+              const sectionRows = getRowsBySection(section);
+
+              return (
+                <Fragment key={section}>
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell
+                      colSpan={6}
+                      className={`${sectionMeta.tone} ${sectionMeta.text} px-5 py-3 text-[2rem] leading-none font-semibold tracking-tight`}
+                    >
+                      {sectionMeta.title}
+                    </TableCell>
+                  </TableRow>
+
+                  {sectionRows.length ? (
+                    sectionRows.map((row) => (
+                      <TableRow key={row.clientId}>
+                        <TableCell className="min-w-64">
+                          <div className="space-y-1">
+                            <Input
+                              value={row.title}
+                              onChange={(event) =>
+                                updateRow(
+                                  row.clientId,
+                                  "title",
+                                  event.target.value,
+                                )
+                              }
+                              className="border-transparent bg-transparent px-0 text-base font-medium text-slate-950 shadow-none focus-visible:ring-0"
+                            />
+                            <p className="text-xs text-slate-400">
+                              {row.category}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="min-w-40">
+                          <Input
+                            type="date"
+                            value={row.dueDate}
+                            onChange={(event) =>
+                              updateRow(
+                                row.clientId,
+                                "dueDate",
+                                event.target.value,
+                              )
+                            }
+                            className="rounded-2xl bg-white"
+                          />
+                        </TableCell>
+                        <TableCell className="min-w-40">
+                          <Input
+                            inputMode="decimal"
+                            value={row.amount}
+                            onChange={(event) =>
+                              updateRow(
+                                row.clientId,
+                                "amount",
+                                event.target.value,
+                              )
+                            }
+                            className="rounded-2xl bg-white"
+                            placeholder="0,00"
+                          />
+                        </TableCell>
+                        <TableCell className="min-w-52">
+                          <Input
+                            value={row.account}
+                            onChange={(event) =>
+                              updateRow(
+                                row.clientId,
+                                "account",
+                                event.target.value,
+                              )
+                            }
+                            className="rounded-2xl bg-white"
+                          />
+                        </TableCell>
+                        <TableCell className="min-w-44">
+                          <Select
+                            value={row.status}
+                            onValueChange={(value) =>
+                              updateRow(
+                                row.clientId,
+                                "status",
+                                value as FinancialStatus,
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-40 rounded-2xl bg-white">
+                              <SelectValue>
+                                {statusLabel[row.status]}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(statusLabel).map(
+                                ([value, label]) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ),
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="min-w-24">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="rounded-2xl"
+                            onClick={() => removeRow(row.clientId)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="px-5 py-4 text-sm text-slate-500"
+                      >
+                        {sectionMeta.emptyLabel}
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={6} className="px-5 py-4">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-auto rounded-2xl px-0 text-lg font-medium text-slate-700 hover:bg-transparent hover:text-slate-950"
+                        onClick={() => addRow(section)}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Adicionar mais
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                </Fragment>
+              );
+            })}
+          </TableBody>
+        </Table>
+        <div className="border-t border-slate-200 bg-slate-50/70 p-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[0.72fr_1.28fr]">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Essencial</p>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
-                  {formatCurrency(combinedFixed)}
-                </p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Negociável</p>
-                <p className="mt-2 text-lg font-semibold text-amber-600">
-                  {formatCurrency(combinedNegotiable)}
-                </p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Entradas</p>
-                <p className="mt-2 text-lg font-semibold text-emerald-600">
-                  {formatCurrency(combinedIncome)}
-                </p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Saldo livre</p>
-                <p
-                  className={`mt-2 text-lg font-semibold ${
-                    projectedBalance >= 0 ? "text-slate-950" : "text-rose-600"
-                  }`}
-                >
-                  {formatCurrency(projectedBalance)}
-                </p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Saídas já lançadas</p>
+                <p className="text-sm text-slate-500">Total pendente</p>
                 <p className="mt-2 text-lg font-semibold text-rose-600">
-                  {formatCurrency(registeredExpense)}
+                  {formatCurrency(reminder.pendingTotal)}
+                </p>
+              </div>
+              <div className="rounded-3xl bg-white p-4">
+                <p className="text-sm text-slate-500">Total pago</p>
+                <p className="mt-2 text-lg font-semibold text-emerald-600">
+                  {formatCurrency(reminder.paidTotal)}
                 </p>
               </div>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-              Total de saídas projetadas:{" "}
-              <span className="font-semibold text-slate-950">
-                {formatCurrency(projectedExpense)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-[28px] border-amber-200 bg-[linear-gradient(180deg,#fffdf8,#fff8eb)] shadow-[0_22px_60px_-48px_rgba(170,122,33,0.35)]">
-          <CardContent className="space-y-4 p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                <ShieldAlert className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-slate-950">
-                  Estratégia para sair do aperto
-                </h3>
-                <p className="text-sm leading-6 text-slate-600">
-                  Leitura educativa para priorizar o que não pode atrasar e
-                  organizar uma saída possível do resto.
-                </p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {tips.map((tip) => (
+            <div
+              className={`rounded-3xl border px-4 py-4 ${reminder.reminderTone.wrapper}`}
+            >
+              <div className="flex items-start gap-3">
                 <div
-                  key={tip}
-                  className="rounded-3xl border border-amber-200/70 bg-white/90 px-4 py-3 text-sm leading-6 text-slate-700"
+                  className={`flex h-11 w-11 items-center justify-center rounded-2xl ${reminder.reminderTone.iconWrapper}`}
                 >
-                  {tip}
+                  <ReminderIcon className="h-5 w-5" />
                 </div>
-              ))}
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-slate-950">
+                    {reminder.reminderTone.title}
+                  </p>
+                  <p className="text-sm leading-6 text-slate-600">
+                    {reminder.reminderTone.body}
+                  </p>
+                </div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
+
+      {rows.length ? null : (
+        <div className="rounded-3xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+          Este mês está vazio. Use os botões de adicionar para montar sua
+          planilha.
+        </div>
+      )}
     </section>
   );
 }

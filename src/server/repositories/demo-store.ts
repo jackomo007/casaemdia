@@ -3,8 +3,11 @@ import type {
   CreateFinanceEntryInput,
   CreateTaskInput,
   DemoScenario,
+  FinanceEntry,
+  FinanceOverviewData,
   HouseholdWorkspace,
   SessionUser,
+  SyncFinanceMonthInput,
   WorkspacePreset,
 } from "@/types";
 import { getMonthKeyFromDateValue, toDateOnly } from "@/lib/utils/date";
@@ -66,6 +69,127 @@ function getFinanceMonthLabel(value: string) {
   return normalized.charAt(0).toUpperCase() + normalized.slice(1, 3);
 }
 
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
+function buildFinanceOverview(entries: FinanceEntry[]): FinanceOverviewData {
+  const currentMonthKey = getMonthKeyFromDateValue(new Date().toISOString());
+  const currentMonthEntries = entries.filter(
+    (entry) =>
+      getMonthKeyFromDateValue(entry.competenceDate || entry.dueDate) ===
+      currentMonthKey,
+  );
+  const income = currentMonthEntries
+    .filter((entry) => entry.kind === "income")
+    .reduce((total, entry) => total + entry.amount, 0);
+  const expense = currentMonthEntries
+    .filter((entry) => entry.kind === "expense")
+    .reduce((total, entry) => total + entry.amount, 0);
+  const balance = income - expense;
+  const expenseGroups = new Map<string, number>();
+
+  currentMonthEntries
+    .filter((entry) => entry.kind === "expense")
+    .forEach((entry) => {
+      expenseGroups.set(
+        entry.category,
+        (expenseGroups.get(entry.category) ?? 0) + entry.amount,
+      );
+    });
+
+  const categoryBreakdown = Array.from(expenseGroups.entries())
+    .map(([name, amount]) => ({
+      id: `cat-${slugify(name)}`,
+      name,
+      amount,
+      percentage: expense > 0 ? Math.round((amount / expense) * 100) : 0,
+    }))
+    .sort((left, right) => right.amount - left.amount);
+
+  const monthlyMap = new Map<
+    string,
+    { label: string; income: number; expense: number; balance: number }
+  >();
+
+  entries.forEach((entry) => {
+    const monthKey = getMonthKeyFromDateValue(
+      entry.competenceDate || entry.dueDate,
+    );
+    const current = monthlyMap.get(monthKey) ?? {
+      label: getFinanceMonthLabel(monthKey),
+      income: 0,
+      expense: 0,
+      balance: 0,
+    };
+
+    if (entry.kind === "income") {
+      current.income += entry.amount;
+    } else {
+      current.expense += entry.amount;
+    }
+
+    current.balance = current.income - current.expense;
+    monthlyMap.set(monthKey, current);
+  });
+
+  return {
+    summary: {
+      income,
+      expense,
+      balance,
+      forecast: balance,
+      fixedCostRatio: income > 0 ? Math.round((expense / income) * 100) : 0,
+    },
+    entries: [...entries].sort((left, right) =>
+      (right.dueDate || right.competenceDate).localeCompare(
+        left.dueDate || left.competenceDate,
+      ),
+    ),
+    categoryBreakdown,
+    monthlyFlow: Array.from(monthlyMap.entries())
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([, value]) => value),
+  };
+}
+
+function refreshFinanceSnapshots(workspace: HouseholdWorkspace) {
+  workspace.finance = buildFinanceOverview(workspace.finance.entries);
+  workspace.dashboard.finance = workspace.finance.summary;
+}
+
+function getMonthDate(monthKey: string, day: number) {
+  const [yearValue, monthValue] = monthKey.split("-");
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const lastDayOfMonth = new Date(year, month, 0).getDate();
+  const safeDay = Math.min(day, lastDayOfMonth);
+
+  return `${yearValue}-${monthValue}-${String(safeDay).padStart(2, "0")}`;
+}
+
+function getMonthStart(monthKey: string) {
+  return `${monthKey}-01`;
+}
+
+function getMonthDay(dateValue: string) {
+  const [, , day] = toDateOnly(dateValue).split("-");
+  return Number(day);
+}
+
+function getYearMonthKeys(year: number) {
+  return Array.from({ length: 12 }, (_, index) => {
+    const month = String(index + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  });
+}
+
 function upsertMonthlyFlowEntry(
   workspace: HouseholdWorkspace,
   input: CreateFinanceEntryInput,
@@ -119,8 +243,10 @@ export function addFinanceEntry(
     member: input.member,
     dueDate: toDateOnly(input.dueDate),
     competenceDate: toDateOnly(input.competenceDate),
-    status: "pending" as const,
+    paymentDate: input.paymentDate,
+    status: input.status ?? ("pending" as const),
     account: input.account,
+    isFixed: input.isFixed,
   };
 
   workspace.finance.entries = [entry, ...workspace.finance.entries];
@@ -137,6 +263,47 @@ export function addFinanceEntry(
     workspace.finance.summary.income - workspace.finance.summary.expense;
   workspace.dashboard.finance.balance = workspace.finance.summary.balance;
   upsertMonthlyFlowEntry(workspace, input);
+
+  return workspace;
+}
+
+export function replaceFinanceMonthEntries(
+  context: DemoStoreContext,
+  input: SyncFinanceMonthInput,
+): HouseholdWorkspace {
+  const workspace = getWorkspace(context);
+  const isFirstSetup = workspace.finance.entries.length === 0;
+  const [yearValue] = input.monthKey.split("-");
+  const targetMonths = isFirstSetup
+    ? getYearMonthKeys(Number(yearValue))
+    : [input.monthKey];
+  const remainingEntries = workspace.finance.entries.filter(
+    (entry) =>
+      !targetMonths.includes(
+        getMonthKeyFromDateValue(entry.competenceDate || entry.dueDate),
+      ),
+  );
+
+  const syncedEntries = targetMonths.flatMap((monthKey) =>
+    input.rows.map((row, index) => ({
+      id: row.id ?? `entry-${monthKey}-${index}-${Date.now()}`,
+      title: row.title,
+      amount: row.amount,
+      kind:
+        row.section === "income" ? ("income" as const) : ("expense" as const),
+      category: row.category,
+      member: row.member,
+      dueDate: getMonthDate(monthKey, getMonthDay(row.dueDate)),
+      competenceDate: getMonthStart(monthKey),
+      paymentDate: row.paymentDate,
+      status: row.status,
+      account: row.account,
+      isFixed: row.section === "fixed",
+    })),
+  );
+
+  workspace.finance.entries = [...remainingEntries, ...syncedEntries];
+  refreshFinanceSnapshots(workspace);
 
   return workspace;
 }

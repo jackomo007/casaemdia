@@ -6,12 +6,14 @@ import { z } from "zod";
 import {
   financeEntrySchema,
   financeEntryStatusSchema,
+  financeMonthSyncSchema,
   financeSheetSchema,
 } from "@/lib/validations/finance";
 import {
   createFinanceEntries,
   createFinanceEntry,
   deleteEntry,
+  syncFinanceMonthPlan,
   updateEntryStatus,
 } from "@/server/services/finance-service";
 
@@ -31,6 +33,15 @@ export async function createFinanceEntryAction(values: unknown) {
 export async function createFinanceSheetEntriesAction(values: unknown) {
   const payload = financeSheetSchema.parse(values);
   await createFinanceEntries(payload);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/financas");
+
+  return { success: true };
+}
+
+export async function syncFinanceMonthPlanAction(values: unknown) {
+  const payload = financeMonthSyncSchema.parse(values);
+  await syncFinanceMonthPlan(payload);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/financas");
 

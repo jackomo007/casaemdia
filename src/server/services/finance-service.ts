@@ -9,6 +9,7 @@ import {
 import {
   addFinanceEntry,
   getWorkspaceSnapshot,
+  replaceFinanceMonthEntries,
   removeFinanceEntry,
   updateFinanceEntryStatus,
 } from "@/server/repositories/demo-store";
@@ -18,6 +19,7 @@ import type {
   FinanceEntry,
   FinanceOverviewData,
   FinancialStatus,
+  SyncFinanceMonthInput,
 } from "@/types";
 
 function slugify(value: string) {
@@ -65,6 +67,43 @@ function mapStatusToDb(status: FinancialStatus) {
   }
 
   return "PENDING" as const;
+}
+
+function getMonthRange(monthKey: string) {
+  const [yearValue, monthValue] = monthKey.split("-");
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 1);
+
+  return { start, end };
+}
+
+function getMonthDay(dateValue: string) {
+  const [, , day] = toDateOnly(dateValue).split("-");
+  return Number(day);
+}
+
+function getMonthStart(monthKey: string) {
+  return `${monthKey}-01`;
+}
+
+function getMonthDate(monthKey: string, day: number) {
+  const [yearValue, monthValue] = monthKey.split("-");
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const lastDayOfMonth = new Date(year, month, 0).getDate();
+  const safeDay = Math.min(day, lastDayOfMonth);
+
+  return `${yearValue}-${monthValue}-${String(safeDay).padStart(2, "0")}`;
+}
+
+function getYearMonthKeys(year: number) {
+  return Array.from({ length: 12 }, (_, index) => {
+    const month = String(index + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  });
 }
 
 function inferAccountType(name: string) {
@@ -221,7 +260,11 @@ async function persistFinanceEntry(
         amount: input.amount,
         competenceDate: new Date(input.competenceDate),
         dueDate: input.dueDate ? new Date(input.dueDate) : null,
-        status: "PENDING",
+        status: mapStatusToDb(input.status ?? "pending"),
+        receivedAt:
+          input.status === "paid"
+            ? new Date(input.paymentDate ?? new Date().toISOString())
+            : null,
       },
     });
     return;
@@ -237,10 +280,30 @@ async function persistFinanceEntry(
       amount: input.amount,
       competenceDate: new Date(input.competenceDate),
       dueDate: input.dueDate ? new Date(input.dueDate) : null,
-      status: "PENDING",
-      isFixed: input.account === "Planejamento essencial",
+      status: mapStatusToDb(input.status ?? "pending"),
+      paidAt:
+        input.status === "paid"
+          ? new Date(input.paymentDate ?? new Date().toISOString())
+          : null,
+      isFixed: input.isFixed ?? input.account === "Planejamento essencial",
     },
   });
+}
+
+function mapSyncRowsToEntries(input: SyncFinanceMonthInput, monthKey: string) {
+  return input.rows.map((row) => ({
+    title: row.title.trim(),
+    amount: row.amount,
+    kind: row.section === "income" ? ("income" as const) : ("expense" as const),
+    category: row.category.trim(),
+    member: row.member.trim(),
+    dueDate: getMonthDate(monthKey, getMonthDay(row.dueDate)),
+    competenceDate: getMonthStart(monthKey),
+    account: row.account.trim(),
+    status: row.status,
+    paymentDate: row.paymentDate,
+    isFixed: row.section === "fixed",
+  }));
 }
 
 function buildFinanceOverviewFromEntries(
@@ -377,6 +440,7 @@ async function getDatabaseFinanceOverview(householdId: string) {
       paymentDate: entry.paidAt?.toISOString(),
       status: mapEntryStatus(entry.status),
       account: entry.account?.name ?? "Conta principal",
+      isFixed: entry.isFixed,
     })),
   ];
 
@@ -443,6 +507,56 @@ export async function createFinanceEntries(inputs: CreateFinanceEntryInput[]) {
   }
 
   return getDatabaseFinanceOverview(workspace.household.id);
+}
+
+export async function syncFinanceMonthPlan(input: SyncFinanceMonthInput) {
+  const { session, workspace } = await getCurrentWorkspace();
+
+  if (!workspace) {
+    return replaceFinanceMonthEntries(session, input).finance;
+  }
+
+  const householdId = workspace.household.id;
+  const userId = workspace.user.id;
+  const [incomeCount, expenseCount] = await Promise.all([
+    prisma.incomeEntry.count({ where: { householdId } }),
+    prisma.expenseEntry.count({ where: { householdId } }),
+  ]);
+  const isFirstSetup = incomeCount + expenseCount === 0;
+  const [yearValue] = input.monthKey.split("-");
+  const targetMonthKeys = isFirstSetup
+    ? getYearMonthKeys(Number(yearValue))
+    : [input.monthKey];
+
+  for (const monthKey of targetMonthKeys) {
+    const monthEntries = mapSyncRowsToEntries(input, monthKey);
+    const { start, end } = getMonthRange(monthKey);
+
+    await prisma.incomeEntry.deleteMany({
+      where: {
+        householdId,
+        competenceDate: {
+          gte: start,
+          lt: end,
+        },
+      },
+    });
+    await prisma.expenseEntry.deleteMany({
+      where: {
+        householdId,
+        competenceDate: {
+          gte: start,
+          lt: end,
+        },
+      },
+    });
+
+    for (const entry of monthEntries) {
+      await persistFinanceEntry(householdId, userId, entry);
+    }
+  }
+
+  return getDatabaseFinanceOverview(householdId);
 }
 
 export async function updateEntryStatus(input: {

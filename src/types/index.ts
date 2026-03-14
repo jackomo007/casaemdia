@@ -142,6 +142,7 @@ export interface FinanceEntry {
   paymentDate?: string;
   status: FinancialStatus;
   account: string;
+  isFixed?: boolean;
 }
 
 export interface FinancialSummary {
@@ -240,6 +241,27 @@ export interface CreateFinanceEntryInput {
   dueDate: string;
   competenceDate: string;
   account: string;
+  status?: FinancialStatus;
+  paymentDate?: string;
+  isFixed?: boolean;
+}
+
+export interface SyncFinanceMonthRowInput {
+  id?: string;
+  title: string;
+  amount: number;
+  dueDate: string;
+  account: string;
+  status: FinancialStatus;
+  section: "income" | "fixed" | "negotiable";
+  category: string;
+  member: string;
+  paymentDate?: string;
+}
+
+export interface SyncFinanceMonthInput {
+  monthKey: string;
+  rows: SyncFinanceMonthRowInput[];
 }
 
 export interface CreateCalendarEventInput {

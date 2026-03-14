@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { FinanceAreaChart } from "@/components/charts/finance-area-chart";
 import { PageHeader } from "@/components/shared/page-header";
@@ -14,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FinanceEntriesTable } from "@/features/finances/components/finance-entries-table";
 import { FinancePlanningSheet } from "@/features/finances/components/finance-planning-sheet";
 import { getCurrentMonthKey, getMonthKeyFromDateValue } from "@/lib/utils/date";
 import type { FinanceOverviewData } from "@/types";
@@ -98,28 +96,11 @@ export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
       </div>
 
       <FinancePlanningSheet
-        key={activeMonth}
+        key={`${activeMonth}-${filteredEntries.map((entry) => entry.id).join("-")}`}
         selectedMonth={activeMonth}
         currentEntries={filteredEntries}
+        hasAnyEntries={data.entries.length > 0}
       />
-
-      <section className="space-y-4">
-        <SectionHeader
-          title="Visão planilha"
-          description="Tabela inspirada em Excel/Sheets com foco em filtros, status e leitura rápida."
-        />
-        {filteredEntries.length ? (
-          <FinanceEntriesTable
-            entries={filteredEntries}
-            monthLabel={formatMonthLabel(activeMonth)}
-          />
-        ) : (
-          <EmptyState
-            title="Sua planilha ainda está vazia"
-            description="Use a grade de preenchimento rápido acima para começar a montar seu mês."
-          />
-        )}
-      </section>
 
       {hasMonthlyFlowData ? (
         <Card className="border-border/70 rounded-[32px] bg-white/85">
