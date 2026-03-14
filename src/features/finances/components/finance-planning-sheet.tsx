@@ -42,6 +42,8 @@ type PlanningRow = {
   incomeType?: IncomeType;
 };
 
+const DEFAULT_AMOUNT = "0,00";
+
 function getMonthStart(monthKey: string) {
   return getDateForMonth(monthKey, 1);
 }
@@ -69,7 +71,7 @@ function createPlanningRow(
     return {
       id: createRowId(section),
       label: "",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 20),
       section,
       incomeType: "Extra",
@@ -79,7 +81,7 @@ function createPlanningRow(
   return {
     id: createRowId(section),
     label: "",
-    amount: "",
+    amount: DEFAULT_AMOUNT,
     dueDate:
       section === "fixed"
         ? getMonthDate(selectedMonth, 25)
@@ -93,35 +95,35 @@ function createFixedRowsTemplate(selectedMonth: string): PlanningRow[] {
     {
       id: "fixed-rent",
       label: "Aluguel",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 10),
       section: "fixed",
     },
     {
       id: "fixed-water",
       label: "Água",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 12),
       section: "fixed",
     },
     {
       id: "fixed-phone",
       label: "Plano de telefones",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 15),
       section: "fixed",
     },
     {
       id: "fixed-energy",
       label: "Energia",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 18),
       section: "fixed",
     },
     {
       id: "fixed-internet",
       label: "Internet",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 20),
       section: "fixed",
     },
@@ -133,35 +135,35 @@ function createNegotiableRowsTemplate(selectedMonth: string): PlanningRow[] {
     {
       id: "neg-credit-card",
       label: "Cartão de crédito",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 15),
       section: "negotiable",
     },
     {
       id: "neg-loan",
       label: "Empréstimo",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 20),
       section: "negotiable",
     },
     {
       id: "neg-installment",
       label: "Parcelamento / carne",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 22),
       section: "negotiable",
     },
     {
       id: "neg-tax",
       label: "Imposto / atraso",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 25),
       section: "negotiable",
     },
     {
       id: "neg-limit",
       label: "Cheque especial / limite",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 28),
       section: "negotiable",
     },
@@ -173,7 +175,7 @@ function createIncomeRowsTemplate(selectedMonth: string): PlanningRow[] {
     {
       id: "income-clt-main",
       label: "Renda principal",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 5),
       section: "income",
       incomeType: "CLT",
@@ -181,7 +183,7 @@ function createIncomeRowsTemplate(selectedMonth: string): PlanningRow[] {
     {
       id: "income-pj",
       label: "Projeto PJ",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 15),
       section: "income",
       incomeType: "PJ",
@@ -189,7 +191,7 @@ function createIncomeRowsTemplate(selectedMonth: string): PlanningRow[] {
     {
       id: "income-extra",
       label: "Renda extra",
-      amount: "",
+      amount: DEFAULT_AMOUNT,
       dueDate: getMonthDate(selectedMonth, 20),
       section: "income",
       incomeType: "Extra",
@@ -207,36 +209,12 @@ function parseAmount(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function formatAmount(value: number) {
-  return value.toFixed(2).replace(".", ",");
-}
-
 function normalizeText(value: string) {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
-}
-
-function inferIncomeType(entry: FinanceEntry): IncomeType {
-  const normalizedCategory = normalizeText(entry.category);
-  const normalizedAccount = normalizeText(entry.account);
-
-  if (normalizedCategory.includes("pj") || normalizedAccount.includes("pj")) {
-    return "PJ";
-  }
-
-  if (
-    normalizedCategory.includes("clt") ||
-    normalizedCategory.includes("salario") ||
-    normalizedCategory.includes("beneficio") ||
-    normalizedCategory.includes("auxilio")
-  ) {
-    return "CLT";
-  }
-
-  return "Extra";
 }
 
 function inferExpenseSection(
@@ -247,106 +225,18 @@ function inferExpenseSection(
 
   if (
     normalizedCategory.includes("negoci") ||
+    normalizedCategory.includes("cartao") ||
+    normalizedCategory.includes("emprest") ||
+    normalizedCategory.includes("parcel") ||
+    normalizedCategory.includes("imposto") ||
+    normalizedCategory.includes("atraso") ||
+    normalizedCategory.includes("limite") ||
     normalizedAccount.includes("renegoci")
   ) {
     return "negotiable";
   }
 
   return "fixed";
-}
-
-function mergeTemplateWithEntries(
-  templates: PlanningRow[],
-  entries: FinanceEntry[],
-  transformEntry: (
-    entry: FinanceEntry,
-    section: PlanningSection,
-  ) => PlanningRow,
-  section: PlanningSection,
-) {
-  const remainingEntries = [...entries];
-
-  const hydratedRows = templates.map((templateRow) => {
-    const matchingIndex = remainingEntries.findIndex(
-      (entry) =>
-        normalizeText(entry.title) === normalizeText(templateRow.label),
-    );
-
-    if (matchingIndex === -1) {
-      return templateRow;
-    }
-
-    const [matchingEntry] = remainingEntries.splice(matchingIndex, 1);
-    return transformEntry(matchingEntry, section);
-  });
-
-  return [
-    ...hydratedRows,
-    ...remainingEntries.map((entry) => transformEntry(entry, section)),
-  ];
-}
-
-function buildRowsFromEntries(
-  selectedMonth: string,
-  currentEntries: FinanceEntry[],
-) {
-  const fixedTemplates = createFixedRowsTemplate(selectedMonth);
-  const negotiableTemplates = createNegotiableRowsTemplate(selectedMonth);
-  const incomeTemplates = createIncomeRowsTemplate(selectedMonth);
-
-  const fixedEntries = currentEntries.filter(
-    (entry) =>
-      entry.kind === "expense" && inferExpenseSection(entry) === "fixed",
-  );
-  const negotiableEntries = currentEntries.filter(
-    (entry) =>
-      entry.kind === "expense" && inferExpenseSection(entry) === "negotiable",
-  );
-  const incomeEntries = currentEntries.filter(
-    (entry) => entry.kind === "income",
-  );
-
-  const toPlanningRow = (
-    entry: FinanceEntry,
-    section: PlanningSection,
-  ): PlanningRow => ({
-    id: entry.id,
-    label: entry.title,
-    amount: formatAmount(entry.amount),
-    dueDate: entry.dueDate.slice(0, 10),
-    section,
-    incomeType: section === "income" ? inferIncomeType(entry) : undefined,
-  });
-
-  return {
-    fixed:
-      fixedEntries.length > 0
-        ? mergeTemplateWithEntries(
-            fixedTemplates,
-            fixedEntries,
-            toPlanningRow,
-            "fixed",
-          )
-        : fixedTemplates,
-    negotiable:
-      negotiableEntries.length > 0
-        ? mergeTemplateWithEntries(
-            negotiableTemplates,
-            negotiableEntries,
-            toPlanningRow,
-            "negotiable",
-          )
-        : negotiableTemplates,
-    income:
-      incomeEntries.length > 0
-        ? mergeTemplateWithEntries(
-            incomeTemplates,
-            incomeEntries,
-            toPlanningRow,
-            "income",
-          )
-        : incomeTemplates,
-  };
 }
 
 function getRowTotal(rows: PlanningRow[]) {
@@ -580,34 +470,47 @@ export function FinancePlanningSheet({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [fixedRows, setFixedRows] = useState(
-    () => buildRowsFromEntries(selectedMonth, currentEntries).fixed,
+  const [fixedRows, setFixedRows] = useState(() =>
+    createFixedRowsTemplate(selectedMonth),
   );
-  const [negotiableRows, setNegotiableRows] = useState(
-    () => buildRowsFromEntries(selectedMonth, currentEntries).negotiable,
+  const [negotiableRows, setNegotiableRows] = useState(() =>
+    createNegotiableRowsTemplate(selectedMonth),
   );
-  const [incomeRows, setIncomeRows] = useState(
-    () => buildRowsFromEntries(selectedMonth, currentEntries).income,
+  const [incomeRows, setIncomeRows] = useState(() =>
+    createIncomeRowsTemplate(selectedMonth),
   );
 
   const totalFixed = getRowTotal(fixedRows);
   const totalNegotiable = getRowTotal(negotiableRows);
   const totalIncome = getRowTotal(incomeRows);
   const totalExpense = totalFixed + totalNegotiable;
-  const balance = totalIncome - totalExpense;
+  const registeredFixed = currentEntries
+    .filter(
+      (entry) =>
+        entry.kind === "expense" && inferExpenseSection(entry) === "fixed",
+    )
+    .reduce((total, entry) => total + entry.amount, 0);
+  const registeredNegotiable = currentEntries
+    .filter(
+      (entry) =>
+        entry.kind === "expense" && inferExpenseSection(entry) === "negotiable",
+    )
+    .reduce((total, entry) => total + entry.amount, 0);
   const registeredExpense = currentEntries
     .filter((entry) => entry.kind === "expense")
     .reduce((total, entry) => total + entry.amount, 0);
   const registeredIncome = currentEntries
     .filter((entry) => entry.kind === "income")
     .reduce((total, entry) => total + entry.amount, 0);
+  const combinedFixed = registeredFixed + totalFixed;
+  const combinedNegotiable = registeredNegotiable + totalNegotiable;
+  const combinedIncome = registeredIncome + totalIncome;
   const projectedExpense = registeredExpense + totalExpense;
-  const projectedIncome = registeredIncome + totalIncome;
-  const projectedBalance = projectedIncome - projectedExpense;
+  const projectedBalance = combinedIncome - projectedExpense;
   const tips = getTips({
-    totalIncome: projectedIncome,
-    totalFixed: totalFixed + registeredExpense,
-    totalNegotiable,
+    totalIncome: combinedIncome,
+    totalFixed: combinedFixed,
+    totalNegotiable: combinedNegotiable,
     balance: projectedBalance,
   });
 
@@ -765,29 +668,29 @@ export function FinancePlanningSheet({
               <div className="rounded-3xl bg-white p-4">
                 <p className="text-sm text-slate-500">Essencial</p>
                 <p className="mt-2 text-lg font-semibold text-slate-950">
-                  {formatCurrency(totalFixed)}
+                  {formatCurrency(combinedFixed)}
                 </p>
               </div>
               <div className="rounded-3xl bg-white p-4">
                 <p className="text-sm text-slate-500">Negociável</p>
                 <p className="mt-2 text-lg font-semibold text-amber-600">
-                  {formatCurrency(totalNegotiable)}
+                  {formatCurrency(combinedNegotiable)}
                 </p>
               </div>
               <div className="rounded-3xl bg-white p-4">
                 <p className="text-sm text-slate-500">Entradas</p>
                 <p className="mt-2 text-lg font-semibold text-emerald-600">
-                  {formatCurrency(totalIncome)}
+                  {formatCurrency(combinedIncome)}
                 </p>
               </div>
               <div className="rounded-3xl bg-white p-4">
                 <p className="text-sm text-slate-500">Saldo livre</p>
                 <p
                   className={`mt-2 text-lg font-semibold ${
-                    balance >= 0 ? "text-slate-950" : "text-rose-600"
+                    projectedBalance >= 0 ? "text-slate-950" : "text-rose-600"
                   }`}
                 >
-                  {formatCurrency(balance)}
+                  {formatCurrency(projectedBalance)}
                 </p>
               </div>
               <div className="rounded-3xl bg-white p-4">

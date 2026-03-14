@@ -2,7 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -43,12 +43,26 @@ export function FinanceEntriesTable({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [statusOverrides, setStatusOverrides] = useState<
+    Record<string, FinancialStatus>
+  >({});
 
   function handleStatusChange(id: string, status: FinancialStatus) {
+    const previousStatus =
+      statusOverrides[id] ?? entries.find((entry) => entry.id === id)?.status;
+    setStatusOverrides((current) => ({
+      ...current,
+      [id]: status,
+    }));
+
     startTransition(async () => {
       const result = await updateFinanceEntryStatusAction({ id, status });
 
       if (!result.success) {
+        setStatusOverrides((current) => ({
+          ...current,
+          ...(previousStatus ? { [id]: previousStatus } : {}),
+        }));
         toast.error("Nao foi possivel atualizar o status.");
         return;
       }
@@ -101,63 +115,67 @@ export function FinanceEntriesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {entries.map((entry) => (
-            <TableRow key={entry.id}>
-              <TableCell>
-                <div>
-                  <p className="font-medium text-slate-950">{entry.title}</p>
-                  <p className="text-xs text-slate-400">{entry.category}</p>
-                </div>
-              </TableCell>
-              <TableCell>{formatLongDate(entry.dueDate)}</TableCell>
-              <TableCell>
-                <span
-                  className={
-                    entry.kind === "income"
-                      ? "text-emerald-600"
-                      : "text-rose-600"
-                  }
-                >
-                  {entry.kind === "income" ? "+" : "-"}{" "}
-                  {formatCurrency(entry.amount)}
-                </span>
-              </TableCell>
-              <TableCell>{entry.account}</TableCell>
-              <TableCell>
-                <Select
-                  value={entry.status}
-                  disabled={isPending}
-                  onValueChange={(value) =>
-                    handleStatusChange(entry.id, value as FinancialStatus)
-                  }
-                >
-                  <SelectTrigger className="w-36 rounded-2xl bg-white">
-                    <SelectValue>{statusLabel[entry.status]}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(statusLabel).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={isPending}
-                  aria-label={`Apagar ${entry.title}`}
-                  className="rounded-2xl"
-                  onClick={() => handleDelete(entry.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
+          {entries.map((entry) => {
+            const currentStatus = statusOverrides[entry.id] ?? entry.status;
+
+            return (
+              <TableRow key={entry.id}>
+                <TableCell>
+                  <div>
+                    <p className="font-medium text-slate-950">{entry.title}</p>
+                    <p className="text-xs text-slate-400">{entry.category}</p>
+                  </div>
+                </TableCell>
+                <TableCell>{formatLongDate(entry.dueDate)}</TableCell>
+                <TableCell>
+                  <span
+                    className={
+                      entry.kind === "income"
+                        ? "text-emerald-600"
+                        : "text-rose-600"
+                    }
+                  >
+                    {entry.kind === "income" ? "+" : "-"}{" "}
+                    {formatCurrency(entry.amount)}
+                  </span>
+                </TableCell>
+                <TableCell>{entry.account}</TableCell>
+                <TableCell>
+                  <Select
+                    value={currentStatus}
+                    disabled={isPending}
+                    onValueChange={(value) =>
+                      handleStatusChange(entry.id, value as FinancialStatus)
+                    }
+                  >
+                    <SelectTrigger className="w-36 rounded-2xl bg-white">
+                      <SelectValue>{statusLabel[currentStatus]}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(statusLabel).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={isPending}
+                    aria-label={`Apagar ${entry.title}`}
+                    className="rounded-2xl"
+                    onClick={() => handleDelete(entry.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
