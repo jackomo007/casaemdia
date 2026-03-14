@@ -29,23 +29,36 @@ function formatMonthLabel(monthKey: string) {
   }).format(date);
 }
 
+function getYearMonthOptions(year: number) {
+  return Array.from({ length: 12 }, (_, monthIndex) => {
+    const month = String(monthIndex + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  });
+}
+
 export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
   const hasMonthlyFlowData = data.monthlyFlow.some(
     (point) => point.income !== 0 || point.expense !== 0 || point.balance !== 0,
   );
-  const monthOptions = Array.from(
+  const currentMonth = getCurrentMonthKey();
+  const currentYear = Number(currentMonth.slice(0, 4));
+  const entryMonths = Array.from(
     new Set(
       data.entries.map((entry) =>
         getMonthKeyFromDateValue(entry.competenceDate || entry.dueDate),
       ),
     ),
-  ).sort((left, right) => right.localeCompare(left));
-  const availableMonthOptions =
-    monthOptions.length > 0 ? monthOptions : [getCurrentMonthKey()];
-  const [selectedMonth, setSelectedMonth] = useState(availableMonthOptions[0]);
+  );
+  const availableMonthOptions = Array.from(
+    new Set([...getYearMonthOptions(currentYear), ...entryMonths]),
+  ).sort((left, right) => left.localeCompare(right));
+  const defaultMonth = availableMonthOptions.includes(currentMonth)
+    ? currentMonth
+    : availableMonthOptions[0];
+  const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const activeMonth = availableMonthOptions.includes(selectedMonth)
     ? selectedMonth
-    : availableMonthOptions[0];
+    : defaultMonth;
 
   const filteredEntries = data.entries.filter(
     (entry) =>
@@ -62,7 +75,7 @@ export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
       />
 
       <div className="border-border/70 bg-card/80 flex flex-wrap items-center gap-3 rounded-3xl border p-3 shadow-[0_12px_30px_-24px_rgba(52,35,122,0.3)]">
-        <span className="text-sm font-medium text-slate-600">Mes</span>
+        <span className="text-sm font-medium text-slate-600">Mês</span>
         <Select
           value={activeMonth}
           onValueChange={(value) => {
@@ -72,7 +85,7 @@ export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
           }}
         >
           <SelectTrigger className="w-full max-w-xs rounded-2xl bg-white md:w-72">
-            <SelectValue placeholder="Selecione o mes" />
+            <SelectValue>{formatMonthLabel(activeMonth)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {availableMonthOptions.map((monthOption) => (
