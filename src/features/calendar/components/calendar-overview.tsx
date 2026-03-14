@@ -13,23 +13,50 @@ import { CalendarEventForm } from "@/features/calendar/components/calendar-event
 import { deleteCalendarEventAction } from "@/server/actions/calendar-actions";
 import type { CalendarEventItem } from "@/types";
 
-type AgendaView = "month" | "week";
+type AgendaFilter = "week" | string;
 
-function isInSelectedView(event: CalendarEventItem, view: AgendaView) {
-  const currentDate = new Date();
+function getMonthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonthLabel(date: Date) {
+  const label = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+  }).format(date);
+
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function getRemainingMonths(referenceDate: Date) {
+  return Array.from({ length: 12 - referenceDate.getMonth() }, (_, index) => {
+    const date = new Date(
+      referenceDate.getFullYear(),
+      referenceDate.getMonth() + index,
+      1,
+    );
+
+    return {
+      value: getMonthKey(date),
+      label: formatMonthLabel(date),
+    };
+  });
+}
+
+function isInSelectedFilter(
+  event: CalendarEventItem,
+  filter: AgendaFilter,
+  referenceDate: Date,
+) {
   const eventDate = new Date(event.startsAt);
 
-  if (view === "month") {
-    return (
-      eventDate.getMonth() === currentDate.getMonth() &&
-      eventDate.getFullYear() === currentDate.getFullYear()
-    );
+  if (filter !== "week") {
+    return getMonthKey(eventDate) === filter;
   }
 
-  const endOfWeek = new Date(currentDate);
-  endOfWeek.setDate(currentDate.getDate() + 7);
+  const endOfWeek = new Date(referenceDate);
+  endOfWeek.setDate(referenceDate.getDate() + 7);
 
-  return eventDate >= currentDate && eventDate <= endOfWeek;
+  return eventDate >= referenceDate && eventDate <= endOfWeek;
 }
 
 export function CalendarOverview({
@@ -41,10 +68,19 @@ export function CalendarOverview({
 }) {
   const [isPending, startTransition] = useTransition();
   const [liveEvents, setLiveEvents] = useState(events);
-  const [view, setView] = useState<AgendaView>("month");
+  const currentDate = new Date(referenceDate);
+  const monthOptions = getRemainingMonths(currentDate);
+  const defaultFilter = monthOptions[0]?.value ?? "week";
+  const [selectedFilter, setSelectedFilter] =
+    useState<AgendaFilter>(defaultFilter);
   const filteredEvents = liveEvents.filter((event) =>
-    isInSelectedView(event, view),
+    isInSelectedFilter(event, selectedFilter, currentDate),
   );
+  const selectedLabel =
+    selectedFilter === "week"
+      ? "Semana"
+      : (monthOptions.find((option) => option.value === selectedFilter)
+          ?.label ?? "Mês");
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -70,22 +106,27 @@ export function CalendarOverview({
       <div className="border-border/70 bg-card/80 flex flex-wrap items-center gap-3 rounded-3xl border p-3 shadow-[0_12px_30px_-24px_rgba(52,35,122,0.3)]">
         <Button
           type="button"
-          variant={view === "month" ? "default" : "outline"}
+          variant={selectedFilter === "week" ? "default" : "outline"}
           className="rounded-2xl"
-          onClick={() => setView("month")}
-        >
-          Mes
-        </Button>
-        <Button
-          type="button"
-          variant={view === "week" ? "default" : "outline"}
-          className="rounded-2xl"
-          onClick={() => setView("week")}
+          onClick={() => setSelectedFilter("week")}
         >
           Semana
         </Button>
+        {monthOptions.map((monthOption) => (
+          <Button
+            key={monthOption.value}
+            type="button"
+            variant={
+              selectedFilter === monthOption.value ? "default" : "outline"
+            }
+            className="rounded-2xl"
+            onClick={() => setSelectedFilter(monthOption.value)}
+          >
+            {monthOption.label}
+          </Button>
+        ))}
         <span className="text-sm text-slate-500">
-          {filteredEvents.length} item(ns) nesta visualizacao
+          {filteredEvents.length} item(ns) em {selectedLabel}
         </span>
       </div>
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -96,27 +137,33 @@ export function CalendarOverview({
               description="Tudo o que precisa acontecer primeiro na rotina da casa."
             />
             <div className="grid gap-4 md:grid-cols-2">
-              {filteredEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  actions={
-                    event.canDelete ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        disabled={isPending}
-                        aria-label={`Apagar ${event.title}`}
-                        className="rounded-2xl"
-                        onClick={() => handleDelete(event.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    ) : undefined
-                  }
-                />
-              ))}
+              {filteredEvents.length > 0 ? (
+                filteredEvents.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    actions={
+                      event.canDelete ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={isPending}
+                          aria-label={`Apagar ${event.title}`}
+                          className="rounded-2xl"
+                          onClick={() => handleDelete(event.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">
+                  Nenhum evento encontrado em {selectedLabel.toLowerCase()}.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
