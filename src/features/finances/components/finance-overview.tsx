@@ -16,12 +16,8 @@ import {
 } from "@/components/ui/select";
 import { FinanceEntriesTable } from "@/features/finances/components/finance-entries-table";
 import { FinancePlanningSheet } from "@/features/finances/components/finance-planning-sheet";
+import { getCurrentMonthKey, getMonthKeyFromDateValue } from "@/lib/utils/date";
 import type { FinanceOverviewData } from "@/types";
-
-function getMonthKey(dateValue: string) {
-  const date = new Date(dateValue);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
 
 function formatMonthLabel(monthKey: string) {
   const [year, month] = monthKey.split("-");
@@ -42,31 +38,28 @@ function getPlanningSheetKey(
     .join("|")}`;
 }
 
-export function FinanceOverview({
-  data,
-  referenceDate,
-}: {
-  data: FinanceOverviewData;
-  referenceDate: string;
-}) {
+export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
   const hasMonthlyFlowData = data.monthlyFlow.some(
     (point) => point.income !== 0 || point.expense !== 0 || point.balance !== 0,
   );
   const monthOptions = Array.from(
     new Set(
       data.entries.map((entry) =>
-        getMonthKey(entry.competenceDate || entry.dueDate),
+        getMonthKeyFromDateValue(entry.competenceDate || entry.dueDate),
       ),
     ),
   ).sort((left, right) => right.localeCompare(left));
   const availableMonthOptions =
-    monthOptions.length > 0
-      ? monthOptions
-      : [getMonthKey(new Date().toISOString())];
+    monthOptions.length > 0 ? monthOptions : [getCurrentMonthKey()];
   const [selectedMonth, setSelectedMonth] = useState(availableMonthOptions[0]);
+  const activeMonth = availableMonthOptions.includes(selectedMonth)
+    ? selectedMonth
+    : availableMonthOptions[0];
+
   const filteredEntries = data.entries.filter(
     (entry) =>
-      getMonthKey(entry.competenceDate || entry.dueDate) === selectedMonth,
+      getMonthKeyFromDateValue(entry.competenceDate || entry.dueDate) ===
+      activeMonth,
   );
 
   return (
@@ -80,7 +73,7 @@ export function FinanceOverview({
       <div className="border-border/70 bg-card/80 flex flex-wrap items-center gap-3 rounded-3xl border p-3 shadow-[0_12px_30px_-24px_rgba(52,35,122,0.3)]">
         <span className="text-sm font-medium text-slate-600">Mes</span>
         <Select
-          value={selectedMonth}
+          value={activeMonth}
           onValueChange={(value) => {
             if (value) {
               setSelectedMonth(value);
@@ -101,8 +94,8 @@ export function FinanceOverview({
       </div>
 
       <FinancePlanningSheet
-        key={getPlanningSheetKey(selectedMonth, filteredEntries)}
-        referenceDate={referenceDate}
+        key={getPlanningSheetKey(activeMonth, filteredEntries)}
+        selectedMonth={activeMonth}
         currentEntries={filteredEntries}
       />
 
@@ -114,7 +107,7 @@ export function FinanceOverview({
         {filteredEntries.length ? (
           <FinanceEntriesTable
             entries={filteredEntries}
-            monthLabel={formatMonthLabel(selectedMonth)}
+            monthLabel={formatMonthLabel(activeMonth)}
           />
         ) : (
           <EmptyState

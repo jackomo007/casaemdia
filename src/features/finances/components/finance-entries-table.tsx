@@ -136,7 +136,7 @@ export function FinanceEntriesTable({
                   }
                 >
                   <SelectTrigger className="w-36 rounded-2xl bg-white">
-                    <SelectValue />
+                    <SelectValue>{statusLabel[entry.status]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(statusLabel).map(([value, label]) => (

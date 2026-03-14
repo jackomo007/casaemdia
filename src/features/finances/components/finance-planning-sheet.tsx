@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getMonthDate as getDateForMonth } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { createFinanceSheetEntriesAction } from "@/server/actions/finance-actions";
 import type { FinanceEntry } from "@/types";
@@ -41,22 +42,12 @@ type PlanningRow = {
   incomeType?: IncomeType;
 };
 
-function clampDay(year: number, monthIndex: number, day: number) {
-  const lastDayOfMonth = new Date(year, monthIndex + 1, 0).getDate();
-  return Math.min(day, lastDayOfMonth);
+function getMonthStart(monthKey: string) {
+  return getDateForMonth(monthKey, 1);
 }
 
-function getMonthStart(referenceDate: string) {
-  const now = new Date(referenceDate);
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-function getMonthDate(referenceDate: string, day: number) {
-  const now = new Date(referenceDate);
-  const monthIndex = now.getMonth();
-  const normalizedDay = clampDay(now.getFullYear(), monthIndex, day);
-
-  return `${now.getFullYear()}-${String(monthIndex + 1).padStart(2, "0")}-${String(normalizedDay).padStart(2, "0")}`;
+function getMonthDate(monthKey: string, day: number) {
+  return getDateForMonth(monthKey, day);
 }
 
 function createRowId(section: PlanningSection) {
@@ -72,14 +63,14 @@ function createRowId(section: PlanningSection) {
 
 function createPlanningRow(
   section: PlanningSection,
-  referenceDate: string,
+  selectedMonth: string,
 ): PlanningRow {
   if (section === "income") {
     return {
       id: createRowId(section),
       label: "",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 20),
+      dueDate: getMonthDate(selectedMonth, 20),
       section,
       incomeType: "Extra",
     };
@@ -91,99 +82,99 @@ function createPlanningRow(
     amount: "",
     dueDate:
       section === "fixed"
-        ? getMonthDate(referenceDate, 25)
-        : getMonthDate(referenceDate, 28),
+        ? getMonthDate(selectedMonth, 25)
+        : getMonthDate(selectedMonth, 28),
     section,
   };
 }
 
-function createFixedRowsTemplate(referenceDate: string): PlanningRow[] {
+function createFixedRowsTemplate(selectedMonth: string): PlanningRow[] {
   return [
     {
       id: "fixed-rent",
       label: "Aluguel",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 10),
+      dueDate: getMonthDate(selectedMonth, 10),
       section: "fixed",
     },
     {
       id: "fixed-water",
       label: "Água",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 12),
+      dueDate: getMonthDate(selectedMonth, 12),
       section: "fixed",
     },
     {
       id: "fixed-phone",
       label: "Plano de telefones",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 15),
+      dueDate: getMonthDate(selectedMonth, 15),
       section: "fixed",
     },
     {
       id: "fixed-energy",
       label: "Energia",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 18),
+      dueDate: getMonthDate(selectedMonth, 18),
       section: "fixed",
     },
     {
       id: "fixed-internet",
       label: "Internet",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 20),
+      dueDate: getMonthDate(selectedMonth, 20),
       section: "fixed",
     },
   ];
 }
 
-function createNegotiableRowsTemplate(referenceDate: string): PlanningRow[] {
+function createNegotiableRowsTemplate(selectedMonth: string): PlanningRow[] {
   return [
     {
       id: "neg-credit-card",
       label: "Cartão de crédito",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 15),
+      dueDate: getMonthDate(selectedMonth, 15),
       section: "negotiable",
     },
     {
       id: "neg-loan",
       label: "Empréstimo",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 20),
+      dueDate: getMonthDate(selectedMonth, 20),
       section: "negotiable",
     },
     {
       id: "neg-installment",
       label: "Parcelamento / carne",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 22),
+      dueDate: getMonthDate(selectedMonth, 22),
       section: "negotiable",
     },
     {
       id: "neg-tax",
       label: "Imposto / atraso",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 25),
+      dueDate: getMonthDate(selectedMonth, 25),
       section: "negotiable",
     },
     {
       id: "neg-limit",
       label: "Cheque especial / limite",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 28),
+      dueDate: getMonthDate(selectedMonth, 28),
       section: "negotiable",
     },
   ];
 }
 
-function createIncomeRowsTemplate(referenceDate: string): PlanningRow[] {
+function createIncomeRowsTemplate(selectedMonth: string): PlanningRow[] {
   return [
     {
       id: "income-clt-main",
       label: "Renda principal",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 5),
+      dueDate: getMonthDate(selectedMonth, 5),
       section: "income",
       incomeType: "CLT",
     },
@@ -191,7 +182,7 @@ function createIncomeRowsTemplate(referenceDate: string): PlanningRow[] {
       id: "income-pj",
       label: "Projeto PJ",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 15),
+      dueDate: getMonthDate(selectedMonth, 15),
       section: "income",
       incomeType: "PJ",
     },
@@ -199,7 +190,7 @@ function createIncomeRowsTemplate(referenceDate: string): PlanningRow[] {
       id: "income-extra",
       label: "Renda extra",
       amount: "",
-      dueDate: getMonthDate(referenceDate, 20),
+      dueDate: getMonthDate(selectedMonth, 20),
       section: "income",
       incomeType: "Extra",
     },
@@ -296,12 +287,12 @@ function mergeTemplateWithEntries(
 }
 
 function buildRowsFromEntries(
-  referenceDate: string,
+  selectedMonth: string,
   currentEntries: FinanceEntry[],
 ) {
-  const fixedTemplates = createFixedRowsTemplate(referenceDate);
-  const negotiableTemplates = createNegotiableRowsTemplate(referenceDate);
-  const incomeTemplates = createIncomeRowsTemplate(referenceDate);
+  const fixedTemplates = createFixedRowsTemplate(selectedMonth);
+  const negotiableTemplates = createNegotiableRowsTemplate(selectedMonth);
+  const incomeTemplates = createIncomeRowsTemplate(selectedMonth);
 
   const fixedEntries = currentEntries.filter(
     (entry) =>
@@ -362,8 +353,8 @@ function getRowTotal(rows: PlanningRow[]) {
   return rows.reduce((total, row) => total + parseAmount(row.amount), 0);
 }
 
-function buildEntries(rows: PlanningRow[], referenceDate: string) {
-  const competenceDate = getMonthStart(referenceDate);
+function buildEntries(rows: PlanningRow[], selectedMonth: string) {
+  const competenceDate = getMonthStart(selectedMonth);
 
   return rows
     .filter((row) => parseAmount(row.amount) > 0)
@@ -581,22 +572,22 @@ function PlanningTable({
 }
 
 export function FinancePlanningSheet({
-  referenceDate,
+  selectedMonth,
   currentEntries,
 }: {
-  referenceDate: string;
+  selectedMonth: string;
   currentEntries: FinanceEntry[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [fixedRows, setFixedRows] = useState(
-    () => buildRowsFromEntries(referenceDate, currentEntries).fixed,
+    () => buildRowsFromEntries(selectedMonth, currentEntries).fixed,
   );
   const [negotiableRows, setNegotiableRows] = useState(
-    () => buildRowsFromEntries(referenceDate, currentEntries).negotiable,
+    () => buildRowsFromEntries(selectedMonth, currentEntries).negotiable,
   );
   const [incomeRows, setIncomeRows] = useState(
-    () => buildRowsFromEntries(referenceDate, currentEntries).income,
+    () => buildRowsFromEntries(selectedMonth, currentEntries).income,
   );
 
   const totalFixed = getRowTotal(fixedRows);
@@ -639,9 +630,9 @@ export function FinancePlanningSheet({
   }
 
   function resetSheet() {
-    setFixedRows(createFixedRowsTemplate(referenceDate));
-    setNegotiableRows(createNegotiableRowsTemplate(referenceDate));
-    setIncomeRows(createIncomeRowsTemplate(referenceDate));
+    setFixedRows(createFixedRowsTemplate(selectedMonth));
+    setNegotiableRows(createNegotiableRowsTemplate(selectedMonth));
+    setIncomeRows(createIncomeRowsTemplate(selectedMonth));
   }
 
   function addRow(
@@ -650,7 +641,7 @@ export function FinancePlanningSheet({
   ) {
     setter((currentRows) => [
       ...currentRows,
-      createPlanningRow(section, referenceDate),
+      createPlanningRow(section, selectedMonth),
     ]);
   }
 
@@ -664,7 +655,7 @@ export function FinancePlanningSheet({
   function handleSave() {
     const entries = buildEntries(
       [...fixedRows, ...negotiableRows, ...incomeRows],
-      referenceDate,
+      selectedMonth,
     );
 
     if (!entries.length) {

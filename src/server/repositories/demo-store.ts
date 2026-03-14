@@ -7,6 +7,7 @@ import type {
   SessionUser,
   WorkspacePreset,
 } from "@/types";
+import { getMonthKeyFromDateValue, toDateOnly } from "@/lib/utils/date";
 import {
   createBlankWorkspace,
   getDemoWorkspace,
@@ -56,9 +57,10 @@ function getWorkspace(context: DemoStoreContext): HouseholdWorkspace {
 }
 
 function getFinanceMonthLabel(value: string) {
+  const [year, month] = getMonthKeyFromDateValue(value).split("-");
   const formatted = new Intl.DateTimeFormat("pt-BR", {
     month: "short",
-  }).format(new Date(value));
+  }).format(new Date(Number(year), Number(month) - 1, 1));
 
   const normalized = formatted.replace(".", "");
   return normalized.charAt(0).toUpperCase() + normalized.slice(1, 3);
@@ -115,8 +117,8 @@ export function addFinanceEntry(
     kind: input.kind,
     category: input.category,
     member: input.member,
-    dueDate: input.dueDate,
-    competenceDate: input.competenceDate,
+    dueDate: toDateOnly(input.dueDate),
+    competenceDate: toDateOnly(input.competenceDate),
     status: "pending" as const,
     account: input.account,
   };

@@ -2,6 +2,11 @@ import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
 import {
+  getCurrentMonthKey,
+  getMonthKeyFromDateValue,
+  toDateOnly,
+} from "@/lib/utils/date";
+import {
   addFinanceEntry,
   getWorkspaceSnapshot,
   removeFinanceEntry,
@@ -23,11 +28,6 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 40);
-}
-
-function getMonthKey(dateValue: string) {
-  const date = new Date(dateValue);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function formatMonthLabel(monthKey: string) {
@@ -246,11 +246,11 @@ async function persistFinanceEntry(
 function buildFinanceOverviewFromEntries(
   entries: FinanceEntry[],
 ): FinanceOverviewData {
-  const now = new Date();
-  const currentMonthKey = getMonthKey(now.toISOString());
+  const currentMonthKey = getCurrentMonthKey();
   const currentMonthEntries = entries.filter(
     (entry) =>
-      getMonthKey(entry.competenceDate || entry.dueDate) === currentMonthKey,
+      getMonthKeyFromDateValue(entry.competenceDate || entry.dueDate) ===
+      currentMonthKey,
   );
 
   const income = currentMonthEntries
@@ -287,7 +287,9 @@ function buildFinanceOverviewFromEntries(
   >();
 
   entries.forEach((entry) => {
-    const monthKey = getMonthKey(entry.competenceDate || entry.dueDate);
+    const monthKey = getMonthKeyFromDateValue(
+      entry.competenceDate || entry.dueDate,
+    );
     const current = monthlyMap.get(monthKey) ?? {
       label: formatMonthLabel(monthKey),
       income: 0,
@@ -357,8 +359,8 @@ async function getDatabaseFinanceOverview(householdId: string) {
       kind: "income" as const,
       category: entry.category?.name ?? "Receita",
       member: entry.member?.displayName ?? "Responsável",
-      dueDate: (entry.dueDate ?? entry.competenceDate).toISOString(),
-      competenceDate: entry.competenceDate.toISOString(),
+      dueDate: toDateOnly(entry.dueDate ?? entry.competenceDate),
+      competenceDate: toDateOnly(entry.competenceDate),
       paymentDate: entry.receivedAt?.toISOString(),
       status: mapEntryStatus(entry.status),
       account: entry.account?.name ?? "Conta principal",
@@ -370,8 +372,8 @@ async function getDatabaseFinanceOverview(householdId: string) {
       kind: "expense" as const,
       category: entry.category?.name ?? "Despesa",
       member: entry.member?.displayName ?? "Casa",
-      dueDate: (entry.dueDate ?? entry.competenceDate).toISOString(),
-      competenceDate: entry.competenceDate.toISOString(),
+      dueDate: toDateOnly(entry.dueDate ?? entry.competenceDate),
+      competenceDate: toDateOnly(entry.competenceDate),
       paymentDate: entry.paidAt?.toISOString(),
       status: mapEntryStatus(entry.status),
       account: entry.account?.name ?? "Conta principal",
