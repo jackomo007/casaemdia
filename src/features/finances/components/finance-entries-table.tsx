@@ -1,9 +1,11 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -20,7 +22,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency, formatLongDate } from "@/lib/utils/formatters";
-import { updateFinanceEntryStatusAction } from "@/server/actions/finance-actions";
+import {
+  deleteFinanceEntryAction,
+  updateFinanceEntryStatusAction,
+} from "@/server/actions/finance-actions";
 import type { FinanceEntry, FinancialStatus } from "@/types";
 
 const statusLabel: Record<FinancialStatus, string> = {
@@ -53,6 +58,20 @@ export function FinanceEntriesTable({
     });
   }
 
+  function handleDelete(id: string) {
+    startTransition(async () => {
+      const result = await deleteFinanceEntryAction({ id });
+
+      if (!result.success) {
+        toast.error("Nao foi possivel apagar o lancamento.");
+        return;
+      }
+
+      toast.success("Lançamento apagado.");
+      router.refresh();
+    });
+  }
+
   return (
     <div className="border-border/70 overflow-hidden rounded-[28px] border bg-white/90 shadow-[0_20px_56px_-44px_rgba(80,64,153,0.3)]">
       <div className="border-b border-slate-200 px-5 py-4 text-sm text-slate-500">
@@ -78,6 +97,9 @@ export function FinanceEntriesTable({
             </TableHead>
             <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
               Status
+            </TableHead>
+            <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
+              Ações
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -124,6 +146,19 @@ export function FinanceEntriesTable({
                     ))}
                   </SelectContent>
                 </Select>
+              </TableCell>
+              <TableCell>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={isPending}
+                  aria-label={`Apagar ${entry.title}`}
+                  className="rounded-2xl"
+                  onClick={() => handleDelete(entry.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}

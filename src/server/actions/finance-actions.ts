@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 import {
   financeEntrySchema,
@@ -10,8 +11,13 @@ import {
 import {
   createFinanceEntries,
   createFinanceEntry,
+  deleteEntry,
   updateEntryStatus,
 } from "@/server/services/finance-service";
+
+const financeEntryDeleteSchema = z.object({
+  id: z.string().trim().min(1, "Informe o lançamento."),
+});
 
 export async function createFinanceEntryAction(values: unknown) {
   const payload = financeEntrySchema.parse(values);
@@ -34,6 +40,15 @@ export async function createFinanceSheetEntriesAction(values: unknown) {
 export async function updateFinanceEntryStatusAction(values: unknown) {
   const payload = financeEntryStatusSchema.parse(values);
   await updateEntryStatus(payload);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/financas");
+
+  return { success: true };
+}
+
+export async function deleteFinanceEntryAction(values: unknown) {
+  const payload = financeEntryDeleteSchema.parse(values);
+  await deleteEntry(payload.id);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/financas");
 

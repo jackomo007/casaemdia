@@ -58,15 +58,6 @@ export function CalendarEventForm() {
           placeholder="Ex.: Reunião da escola ou vencimento importante"
         />
       </div>
-      <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="event-description">Descrição</Label>
-        <Input
-          id="event-description"
-          {...form.register("description")}
-          className="rounded-2xl"
-          placeholder="Adicione um contexto rápido para lembrar o que precisa acontecer"
-        />
-      </div>
       <div className="space-y-2">
         <Label htmlFor="event-startsAt">Data e hora</Label>
         <Input

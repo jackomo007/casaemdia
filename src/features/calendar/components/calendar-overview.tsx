@@ -1,6 +1,10 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { EventCard } from "@/components/shared/event-card";
@@ -8,6 +12,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { SectionHeader } from "@/components/shared/section-header";
 import { Button } from "@/components/ui/button";
 import { CalendarEventForm } from "@/features/calendar/components/calendar-event-form";
+import { deleteCalendarEventAction } from "@/server/actions/calendar-actions";
 import type { CalendarEventItem } from "@/types";
 
 type AgendaView = "month" | "week";
@@ -30,10 +35,26 @@ function isInSelectedView(event: CalendarEventItem, view: AgendaView) {
 }
 
 export function CalendarOverview({ events }: { events: CalendarEventItem[] }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [view, setView] = useState<AgendaView>("month");
   const filteredEvents = events.filter((event) =>
     isInSelectedView(event, view),
   );
+
+  function handleDelete(id: string) {
+    startTransition(async () => {
+      const result = await deleteCalendarEventAction({ id });
+
+      if (!result.success) {
+        toast.error("Não foi possível apagar o evento.");
+        return;
+      }
+
+      toast.success("Evento apagado.");
+      router.refresh();
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -72,7 +93,25 @@ export function CalendarOverview({ events }: { events: CalendarEventItem[] }) {
             />
             <div className="grid gap-4 md:grid-cols-2">
               {filteredEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  actions={
+                    event.canDelete ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        disabled={isPending}
+                        aria-label={`Apagar ${event.title}`}
+                        className="rounded-2xl"
+                        onClick={() => handleDelete(event.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : undefined
+                  }
+                />
               ))}
             </div>
           </CardContent>

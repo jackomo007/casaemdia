@@ -139,6 +139,62 @@ export function addFinanceEntry(
   return workspace;
 }
 
+export function removeFinanceEntry(
+  context: DemoStoreContext,
+  id: string,
+): HouseholdWorkspace {
+  const workspace = getWorkspace(context);
+  const entryToRemove = workspace.finance.entries.find(
+    (entry) => entry.id === id,
+  );
+
+  if (!entryToRemove) {
+    return workspace;
+  }
+
+  workspace.finance.entries = workspace.finance.entries.filter(
+    (entry) => entry.id !== id,
+  );
+
+  if (entryToRemove.kind === "expense") {
+    workspace.finance.summary.expense -= entryToRemove.amount;
+    workspace.dashboard.finance.expense -= entryToRemove.amount;
+  } else {
+    workspace.finance.summary.income -= entryToRemove.amount;
+    workspace.dashboard.finance.income -= entryToRemove.amount;
+  }
+
+  workspace.finance.summary.balance =
+    workspace.finance.summary.income - workspace.finance.summary.expense;
+  workspace.dashboard.finance.balance = workspace.finance.summary.balance;
+  workspace.finance.monthlyFlow = workspace.finance.monthlyFlow
+    .map((point) =>
+      point.label ===
+      getFinanceMonthLabel(
+        entryToRemove.competenceDate || entryToRemove.dueDate,
+      )
+        ? {
+            ...point,
+            income:
+              entryToRemove.kind === "income"
+                ? point.income - entryToRemove.amount
+                : point.income,
+            expense:
+              entryToRemove.kind === "expense"
+                ? point.expense - entryToRemove.amount
+                : point.expense,
+          }
+        : point,
+    )
+    .map((point) => ({
+      ...point,
+      balance: point.income - point.expense,
+    }))
+    .filter((point) => point.income > 0 || point.expense > 0);
+
+  return workspace;
+}
+
 export function addCalendarEvent(
   context: DemoStoreContext,
   input: CreateCalendarEventInput,
@@ -156,6 +212,19 @@ export function addCalendarEvent(
   workspace.events = [event, ...workspace.events].sort((a, b) =>
     a.startsAt.localeCompare(b.startsAt),
   );
+  workspace.dashboard.upcomingEvents = workspace.events.slice(0, 3);
+  workspace.dashboard.nextSevenDays = workspace.events.slice(0, 6);
+
+  return workspace;
+}
+
+export function removeCalendarEvent(
+  context: DemoStoreContext,
+  id: string,
+): HouseholdWorkspace {
+  const workspace = getWorkspace(context);
+
+  workspace.events = workspace.events.filter((event) => event.id !== id);
   workspace.dashboard.upcomingEvents = workspace.events.slice(0, 3);
   workspace.dashboard.nextSevenDays = workspace.events.slice(0, 6);
 

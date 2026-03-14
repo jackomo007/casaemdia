@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { createFinanceSheetEntriesAction } from "@/server/actions/finance-actions";
+import type { FinanceEntry } from "@/types";
 
 type PlanningSection = "fixed" | "negotiable" | "income";
 type IncomeType = "CLT" | "PJ" | "Extra";
@@ -221,6 +222,148 @@ function parseAmount(value: string) {
 
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatAmount(value: number) {
+  return value.toFixed(2).replace(".", ",");
+}
+
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function inferIncomeType(entry: FinanceEntry): IncomeType {
+  const normalizedCategory = normalizeText(entry.category);
+  const normalizedAccount = normalizeText(entry.account);
+
+  if (normalizedCategory.includes("pj") || normalizedAccount.includes("pj")) {
+    return "PJ";
+  }
+
+  if (
+    normalizedCategory.includes("clt") ||
+    normalizedCategory.includes("salario") ||
+    normalizedCategory.includes("beneficio") ||
+    normalizedCategory.includes("auxilio")
+  ) {
+    return "CLT";
+  }
+
+  return "Extra";
+}
+
+function inferExpenseSection(
+  entry: FinanceEntry,
+): Exclude<PlanningSection, "income"> {
+  const normalizedCategory = normalizeText(entry.category);
+  const normalizedAccount = normalizeText(entry.account);
+
+  if (
+    normalizedCategory.includes("negoci") ||
+    normalizedAccount.includes("renegoci")
+  ) {
+    return "negotiable";
+  }
+
+  return "fixed";
+}
+
+function mergeTemplateWithEntries(
+  templates: PlanningRow[],
+  entries: FinanceEntry[],
+  transformEntry: (
+    entry: FinanceEntry,
+    section: PlanningSection,
+  ) => PlanningRow,
+  section: PlanningSection,
+) {
+  const remainingEntries = [...entries];
+
+  const hydratedRows = templates.map((templateRow) => {
+    const matchingIndex = remainingEntries.findIndex(
+      (entry) =>
+        normalizeText(entry.title) === normalizeText(templateRow.label),
+    );
+
+    if (matchingIndex === -1) {
+      return templateRow;
+    }
+
+    const [matchingEntry] = remainingEntries.splice(matchingIndex, 1);
+    return transformEntry(matchingEntry, section);
+  });
+
+  return [
+    ...hydratedRows,
+    ...remainingEntries.map((entry) => transformEntry(entry, section)),
+  ];
+}
+
+function buildRowsFromEntries(
+  referenceDate: string,
+  currentEntries: FinanceEntry[],
+) {
+  const fixedTemplates = createFixedRowsTemplate(referenceDate);
+  const negotiableTemplates = createNegotiableRowsTemplate(referenceDate);
+  const incomeTemplates = createIncomeRowsTemplate(referenceDate);
+
+  const fixedEntries = currentEntries.filter(
+    (entry) =>
+      entry.kind === "expense" && inferExpenseSection(entry) === "fixed",
+  );
+  const negotiableEntries = currentEntries.filter(
+    (entry) =>
+      entry.kind === "expense" && inferExpenseSection(entry) === "negotiable",
+  );
+  const incomeEntries = currentEntries.filter(
+    (entry) => entry.kind === "income",
+  );
+
+  const toPlanningRow = (
+    entry: FinanceEntry,
+    section: PlanningSection,
+  ): PlanningRow => ({
+    id: entry.id,
+    label: entry.title,
+    amount: formatAmount(entry.amount),
+    dueDate: entry.dueDate.slice(0, 10),
+    section,
+    incomeType: section === "income" ? inferIncomeType(entry) : undefined,
+  });
+
+  return {
+    fixed:
+      fixedEntries.length > 0
+        ? mergeTemplateWithEntries(
+            fixedTemplates,
+            fixedEntries,
+            toPlanningRow,
+            "fixed",
+          )
+        : fixedTemplates,
+    negotiable:
+      negotiableEntries.length > 0
+        ? mergeTemplateWithEntries(
+            negotiableTemplates,
+            negotiableEntries,
+            toPlanningRow,
+            "negotiable",
+          )
+        : negotiableTemplates,
+    income:
+      incomeEntries.length > 0
+        ? mergeTemplateWithEntries(
+            incomeTemplates,
+            incomeEntries,
+            toPlanningRow,
+            "income",
+          )
+        : incomeTemplates,
+  };
 }
 
 function getRowTotal(rows: PlanningRow[]) {
@@ -447,19 +590,21 @@ function PlanningTable({
 
 export function FinancePlanningSheet({
   referenceDate,
+  currentEntries,
 }: {
   referenceDate: string;
+  currentEntries: FinanceEntry[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [fixedRows, setFixedRows] = useState(() =>
-    createFixedRowsTemplate(referenceDate),
+  const [fixedRows, setFixedRows] = useState(
+    () => buildRowsFromEntries(referenceDate, currentEntries).fixed,
   );
-  const [negotiableRows, setNegotiableRows] = useState(() =>
-    createNegotiableRowsTemplate(referenceDate),
+  const [negotiableRows, setNegotiableRows] = useState(
+    () => buildRowsFromEntries(referenceDate, currentEntries).negotiable,
   );
-  const [incomeRows, setIncomeRows] = useState(() =>
-    createIncomeRowsTemplate(referenceDate),
+  const [incomeRows, setIncomeRows] = useState(
+    () => buildRowsFromEntries(referenceDate, currentEntries).income,
   );
 
   const totalFixed = getRowTotal(fixedRows);
@@ -467,11 +612,20 @@ export function FinancePlanningSheet({
   const totalIncome = getRowTotal(incomeRows);
   const totalExpense = totalFixed + totalNegotiable;
   const balance = totalIncome - totalExpense;
+  const registeredExpense = currentEntries
+    .filter((entry) => entry.kind === "expense")
+    .reduce((total, entry) => total + entry.amount, 0);
+  const registeredIncome = currentEntries
+    .filter((entry) => entry.kind === "income")
+    .reduce((total, entry) => total + entry.amount, 0);
+  const projectedExpense = registeredExpense + totalExpense;
+  const projectedIncome = registeredIncome + totalIncome;
+  const projectedBalance = projectedIncome - projectedExpense;
   const tips = getTips({
-    totalIncome,
-    totalFixed,
+    totalIncome: projectedIncome,
+    totalFixed: totalFixed + registeredExpense,
     totalNegotiable,
-    balance,
+    balance: projectedBalance,
   });
 
   function updateRows(
@@ -622,7 +776,7 @@ export function FinancePlanningSheet({
           <CardContent className="space-y-4 p-5">
             <SectionHeader
               title="Leitura automática"
-              description="Os totais abaixo saem direto da grade, sem precisar montar fórmulas."
+              description="Os totais abaixo combinam a grade atual com o que já está lançado no mês."
             />
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-3xl bg-white p-4">
@@ -653,11 +807,33 @@ export function FinancePlanningSheet({
                   {formatCurrency(balance)}
                 </p>
               </div>
+              <div className="rounded-3xl bg-white p-4">
+                <p className="text-sm text-slate-500">Saídas já lançadas</p>
+                <p className="mt-2 text-lg font-semibold text-rose-600">
+                  {formatCurrency(registeredExpense)}
+                </p>
+              </div>
+              <div className="rounded-3xl bg-white p-4">
+                <p className="text-sm text-slate-500">Entradas já lançadas</p>
+                <p className="mt-2 text-lg font-semibold text-emerald-600">
+                  {formatCurrency(registeredIncome)}
+                </p>
+              </div>
+              <div className="rounded-3xl bg-white p-4">
+                <p className="text-sm text-slate-500">Saldo projetado total</p>
+                <p
+                  className={`mt-2 text-lg font-semibold ${
+                    projectedBalance >= 0 ? "text-slate-950" : "text-rose-600"
+                  }`}
+                >
+                  {formatCurrency(projectedBalance)}
+                </p>
+              </div>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-              Total de saídas planejadas:{" "}
+              Total de saídas projetadas:{" "}
               <span className="font-semibold text-slate-950">
-                {formatCurrency(totalExpense)}
+                {formatCurrency(projectedExpense)}
               </span>
             </div>
           </CardContent>

@@ -142,6 +142,12 @@ export async function signInAction(values: unknown) {
   }
 
   clearAuthFailures(rateLimit.key);
+  if (isDatabaseConfigured()) {
+    await provisionUserWorkspace({
+      email: sessionUser.email,
+      fullName: sessionUser.fullName,
+    });
+  }
   const accessState = await getAccessStateForEmail(sessionUser.email);
   await recordAuditEvent({
     email: sessionUser.email,

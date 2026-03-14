@@ -6,11 +6,7 @@ export const calendarEventSchema = z.object({
     .trim()
     .min(3, "Informe um título.")
     .max(100, "Use no máximo 100 caracteres."),
-  description: z
-    .string()
-    .trim()
-    .min(6, "Adicione um contexto curto.")
-    .max(300, "Use no máximo 300 caracteres."),
+  description: z.string().trim().max(300, "Use no máximo 300 caracteres."),
   startsAt: z.string().min(1, "Selecione a data e hora."),
   kind: z.enum(["school", "medical", "billing", "family", "shopping", "task"]),
   priority: z.enum(["low", "medium", "high"]),

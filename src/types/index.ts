@@ -56,6 +56,7 @@ export interface CalendarEventItem {
   location?: string;
   kind: EventKind;
   priority: PriorityLevel;
+  canDelete?: boolean;
 }
 
 export interface TaskItem {

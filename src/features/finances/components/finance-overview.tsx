@@ -33,6 +33,15 @@ function formatMonthLabel(monthKey: string) {
   }).format(date);
 }
 
+function getPlanningSheetKey(
+  monthKey: string,
+  entries: FinanceOverviewData["entries"],
+) {
+  return `${monthKey}:${entries
+    .map((entry) => `${entry.id}:${entry.status}:${entry.amount}`)
+    .join("|")}`;
+}
+
 export function FinanceOverview({
   data,
   referenceDate,
@@ -88,7 +97,11 @@ export function FinanceOverview({
         </Select>
       </div>
 
-      <FinancePlanningSheet referenceDate={referenceDate} />
+      <FinancePlanningSheet
+        key={getPlanningSheetKey(selectedMonth, filteredEntries)}
+        referenceDate={referenceDate}
+        currentEntries={filteredEntries}
+      />
 
       <Card className="border-border/70 rounded-[32px] bg-white/85">
         <CardContent className="space-y-5 p-6">
