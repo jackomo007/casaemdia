@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -33,6 +33,34 @@ const statusLabel: Record<FinancialStatus, string> = {
   pending: "Pendente",
   overdue: "Atrasado",
 };
+
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function inferExpenseSection(entry: FinanceEntry) {
+  const normalizedCategory = normalizeText(entry.category);
+  const normalizedAccount = normalizeText(entry.account);
+
+  if (
+    normalizedCategory.includes("negoci") ||
+    normalizedCategory.includes("cartao") ||
+    normalizedCategory.includes("emprest") ||
+    normalizedCategory.includes("parcel") ||
+    normalizedCategory.includes("imposto") ||
+    normalizedCategory.includes("atraso") ||
+    normalizedCategory.includes("limite") ||
+    normalizedAccount.includes("renegoci")
+  ) {
+    return "negotiable" as const;
+  }
+
+  return "fixed" as const;
+}
 
 export function FinanceEntriesTable({
   entries,
@@ -68,7 +96,6 @@ export function FinanceEntriesTable({
       }
 
       toast.success("Status atualizado.");
-      router.refresh();
     });
   }
 
@@ -85,6 +112,64 @@ export function FinanceEntriesTable({
       router.refresh();
     });
   }
+
+  const expenseEntries = entries
+    .filter((entry) => entry.kind === "expense")
+    .map((entry) => ({
+      ...entry,
+      currentStatus: statusOverrides[entry.id] ?? entry.status,
+      section: inferExpenseSection(entry),
+    }));
+
+  const paidTotal = expenseEntries
+    .filter((entry) => entry.currentStatus === "paid")
+    .reduce((total, entry) => total + entry.amount, 0);
+  const pendingTotal = expenseEntries
+    .filter((entry) => entry.currentStatus !== "paid")
+    .reduce((total, entry) => total + entry.amount, 0);
+  const essentialPending = expenseEntries
+    .filter(
+      (entry) => entry.currentStatus !== "paid" && entry.section === "fixed",
+    )
+    .reduce((total, entry) => total + entry.amount, 0);
+  const negotiablePending = expenseEntries
+    .filter(
+      (entry) =>
+        entry.currentStatus !== "paid" && entry.section === "negotiable",
+    )
+    .reduce((total, entry) => total + entry.amount, 0);
+
+  const reminderTone =
+    essentialPending > 0
+      ? {
+          wrapper:
+            "border-rose-200 bg-[linear-gradient(180deg,#fff7f7,#fff0f0)]",
+          iconWrapper: "bg-rose-100 text-rose-600",
+          title: "Nao esquece dos essenciais",
+          body:
+            negotiablePending > 0
+              ? `Ainda faltam ${formatCurrency(essentialPending)} em contas essenciais e ${formatCurrency(negotiablePending)} em gastos negociáveis. Priorize o essencial primeiro.`
+              : `Ainda faltam ${formatCurrency(essentialPending)} em contas essenciais. Priorize esse pagamento para a casa nao travar.`,
+          icon: AlertTriangle,
+        }
+      : negotiablePending > 0
+        ? {
+            wrapper:
+              "border-amber-200 bg-[linear-gradient(180deg,#fffdf7,#fff8eb)]",
+            iconWrapper: "bg-amber-100 text-amber-600",
+            title: "Pendencias renegociaveis",
+            body: `Ainda faltam ${formatCurrency(negotiablePending)} em gastos negociáveis. Se apertar, lembra de renegociar antes de virar outra bola de neve.`,
+            icon: Clock3,
+          }
+        : {
+            wrapper:
+              "border-emerald-200 bg-[linear-gradient(180deg,#f7fffb,#effcf5)]",
+            iconWrapper: "bg-emerald-100 text-emerald-600",
+            title: "Mes em dia",
+            body: "As despesas deste mês estão marcadas como pagas na planilha.",
+            icon: CheckCircle2,
+          };
+  const ReminderIcon = reminderTone.icon;
 
   return (
     <div className="border-border/70 overflow-hidden rounded-[28px] border bg-white/90 shadow-[0_20px_56px_-44px_rgba(80,64,153,0.3)]">
@@ -178,6 +263,43 @@ export function FinanceEntriesTable({
           })}
         </TableBody>
       </Table>
+      <div className="border-t border-slate-200 bg-slate-50/70 p-5">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[0.72fr_1.28fr]">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-3xl bg-white p-4">
+              <p className="text-sm text-slate-500">Total pendente</p>
+              <p className="mt-2 text-lg font-semibold text-rose-600">
+                {formatCurrency(pendingTotal)}
+              </p>
+            </div>
+            <div className="rounded-3xl bg-white p-4">
+              <p className="text-sm text-slate-500">Total pago</p>
+              <p className="mt-2 text-lg font-semibold text-emerald-600">
+                {formatCurrency(paidTotal)}
+              </p>
+            </div>
+          </div>
+          <div
+            className={`rounded-3xl border px-4 py-4 ${reminderTone.wrapper}`}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-2xl ${reminderTone.iconWrapper}`}
+              >
+                <ReminderIcon className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-950">
+                  {reminderTone.title}
+                </p>
+                <p className="text-sm leading-6 text-slate-600">
+                  {reminderTone.body}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
