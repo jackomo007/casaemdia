@@ -188,14 +188,6 @@ function createIncomeRowsTemplate(referenceDate: string): PlanningRow[] {
       incomeType: "CLT",
     },
     {
-      id: "income-clt-extra",
-      label: "Benefício / auxílio",
-      amount: "",
-      dueDate: getMonthDate(referenceDate, 7),
-      section: "income",
-      incomeType: "CLT",
-    },
-    {
       id: "income-pj",
       label: "Projeto PJ",
       amount: "",
@@ -811,22 +803,6 @@ export function FinancePlanningSheet({
                 <p className="text-sm text-slate-500">Saídas já lançadas</p>
                 <p className="mt-2 text-lg font-semibold text-rose-600">
                   {formatCurrency(registeredExpense)}
-                </p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Entradas já lançadas</p>
-                <p className="mt-2 text-lg font-semibold text-emerald-600">
-                  {formatCurrency(registeredIncome)}
-                </p>
-              </div>
-              <div className="rounded-3xl bg-white p-4">
-                <p className="text-sm text-slate-500">Saldo projetado total</p>
-                <p
-                  className={`mt-2 text-lg font-semibold ${
-                    projectedBalance >= 0 ? "text-slate-950" : "text-rose-600"
-                  }`}
-                >
-                  {formatCurrency(projectedBalance)}
                 </p>
               </div>
             </div>

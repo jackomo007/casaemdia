@@ -49,6 +49,9 @@ export function FinanceOverview({
   data: FinanceOverviewData;
   referenceDate: string;
 }) {
+  const hasMonthlyFlowData = data.monthlyFlow.some(
+    (point) => point.income !== 0 || point.expense !== 0 || point.balance !== 0,
+  );
   const monthOptions = Array.from(
     new Set(
       data.entries.map((entry) =>
@@ -103,16 +106,6 @@ export function FinanceOverview({
         currentEntries={filteredEntries}
       />
 
-      <Card className="border-border/70 rounded-[32px] bg-white/85">
-        <CardContent className="space-y-5 p-6">
-          <SectionHeader
-            title="Fluxo da casa"
-            description="Comparativo de receitas, despesas e saldo acumulado."
-          />
-          <FinanceAreaChart data={data.monthlyFlow} />
-        </CardContent>
-      </Card>
-
       <section className="space-y-4">
         <SectionHeader
           title="Visão planilha"
@@ -130,6 +123,18 @@ export function FinanceOverview({
           />
         )}
       </section>
+
+      {hasMonthlyFlowData ? (
+        <Card className="border-border/70 rounded-[32px] bg-white/85">
+          <CardContent className="space-y-5 p-6">
+            <SectionHeader
+              title="Fluxo da casa"
+              description="Comparativo de receitas, despesas e saldo acumulado."
+            />
+            <FinanceAreaChart data={data.monthlyFlow} />
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }
