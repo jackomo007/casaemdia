@@ -84,9 +84,6 @@ export function FinanceEntriesTable({
               Lançamento
             </TableHead>
             <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
-              Membro
-            </TableHead>
-            <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
               Vencimento
             </TableHead>
             <TableHead className="h-12 text-xs tracking-[0.2em] text-slate-500 uppercase">
@@ -112,7 +109,6 @@ export function FinanceEntriesTable({
                   <p className="text-xs text-slate-400">{entry.category}</p>
                 </div>
               </TableCell>
-              <TableCell>{entry.member}</TableCell>
               <TableCell>{formatLongDate(entry.dueDate)}</TableCell>
               <TableCell>
                 <span

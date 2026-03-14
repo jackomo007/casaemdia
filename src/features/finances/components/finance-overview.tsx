@@ -29,15 +29,6 @@ function formatMonthLabel(monthKey: string) {
   }).format(date);
 }
 
-function getPlanningSheetKey(
-  monthKey: string,
-  entries: FinanceOverviewData["entries"],
-) {
-  return `${monthKey}:${entries
-    .map((entry) => `${entry.id}:${entry.status}:${entry.amount}`)
-    .join("|")}`;
-}
-
 export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
   const hasMonthlyFlowData = data.monthlyFlow.some(
     (point) => point.income !== 0 || point.expense !== 0 || point.balance !== 0,
@@ -94,7 +85,7 @@ export function FinanceOverview({ data }: { data: FinanceOverviewData }) {
       </div>
 
       <FinancePlanningSheet
-        key={getPlanningSheetKey(activeMonth, filteredEntries)}
+        key={activeMonth}
         selectedMonth={activeMonth}
         currentEntries={filteredEntries}
       />

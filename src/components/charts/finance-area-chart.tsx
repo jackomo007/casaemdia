@@ -30,8 +30,18 @@ export function FinanceAreaChart({ data }: { data: FinanceChartPoint[] }) {
             <YAxis axisLine={false} tickLine={false} />
             <Tooltip />
             <Legend />
-            <Bar dataKey="income" fill="#8fd2ff" radius={[10, 10, 0, 0]} />
-            <Bar dataKey="expense" fill="#ac8dff" radius={[10, 10, 0, 0]} />
+            <Bar
+              dataKey="income"
+              name="Receitas"
+              fill="#8fd2ff"
+              radius={[10, 10, 0, 0]}
+            />
+            <Bar
+              dataKey="expense"
+              name="Despesas"
+              fill="#ac8dff"
+              radius={[10, 10, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -49,6 +59,7 @@ export function FinanceAreaChart({ data }: { data: FinanceChartPoint[] }) {
             <Line
               type="monotone"
               dataKey="balance"
+              name="Saldo"
               stroke="#7c5cff"
               strokeWidth={3}
               dot={{ fill: "#7c5cff" }}
