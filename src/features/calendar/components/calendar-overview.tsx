@@ -1,9 +1,8 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,13 +33,24 @@ function isInSelectedView(event: CalendarEventItem, view: AgendaView) {
   return eventDate >= currentDate && eventDate <= endOfWeek;
 }
 
-export function CalendarOverview({ events }: { events: CalendarEventItem[] }) {
+export function CalendarOverview({
+  events,
+  referenceDate,
+}: {
+  events: CalendarEventItem[];
+  referenceDate: string;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [liveEvents, setLiveEvents] = useState(events);
   const [view, setView] = useState<AgendaView>("month");
-  const filteredEvents = events.filter((event) =>
+  const filteredEvents = liveEvents.filter((event) =>
     isInSelectedView(event, view),
   );
+
+  useEffect(() => {
+    setLiveEvents(events);
+  }, [events]);
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -51,6 +61,7 @@ export function CalendarOverview({ events }: { events: CalendarEventItem[] }) {
         return;
       }
 
+      setLiveEvents(result.events);
       toast.success("Evento apagado.");
       router.refresh();
     });
@@ -122,7 +133,10 @@ export function CalendarOverview({ events }: { events: CalendarEventItem[] }) {
               title="Criar evento"
               description="Use para compromissos, contas, tarefas ou lembretes com prioridade."
             />
-            <CalendarEventForm />
+            <CalendarEventForm
+              onCreated={setLiveEvents}
+              referenceDate={referenceDate}
+            />
           </CardContent>
         </Card>
       </section>

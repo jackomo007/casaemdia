@@ -19,6 +19,8 @@ export function getBillingStatusLabel(status: BillingStatus) {
   return billingStatusLabels[status];
 }
 
-export function getPriorityLabel(priority: PriorityLevel) {
-  return priorityLabels[priority];
+export function getPriorityLabel(priority: PriorityLevel | string) {
+  const normalizedPriority = priority.trim().toLowerCase() as PriorityLevel;
+
+  return priorityLabels[normalizedPriority] ?? priority;
 }

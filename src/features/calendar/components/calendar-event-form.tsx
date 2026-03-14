@@ -3,47 +3,64 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   calendarEventSchema,
   type CalendarEventSchema,
 } from "@/lib/validations/calendar";
 import { createCalendarEventAction } from "@/server/actions/calendar-actions";
+import type { CalendarEventItem } from "@/types";
 
-export function CalendarEventForm() {
+function getDefaultStartsAt(referenceDate: string) {
+  const [datePart = ""] = referenceDate.split("T");
+  return `${datePart}T09:00`;
+}
+
+export function CalendarEventForm({
+  onCreated,
+  referenceDate,
+}: {
+  onCreated?: (events: CalendarEventItem[]) => void;
+  referenceDate: string;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const defaultStartsAt = getDefaultStartsAt(referenceDate);
   const form = useForm<CalendarEventSchema>({
     resolver: zodResolver(calendarEventSchema),
     defaultValues: {
       title: "",
       description: "",
-      startsAt: "",
+      startsAt: defaultStartsAt,
       kind: "school",
       priority: "medium",
     },
   });
-  const kind = useWatch({ control: form.control, name: "kind" });
-  const priority = useWatch({ control: form.control, name: "priority" });
 
   const onSubmit = form.handleSubmit((values) => {
     startTransition(async () => {
-      await createCalendarEventAction(values);
+      const result = await createCalendarEventAction(values);
+
+      if (!result.success) {
+        toast.error("Não foi possível criar o evento.");
+        return;
+      }
+
+      onCreated?.(result.events);
       toast.success("Evento adicionado.");
       router.refresh();
-      form.reset();
+      form.reset({
+        title: "",
+        description: "",
+        startsAt: defaultStartsAt,
+        kind: "school",
+        priority: "medium",
+      });
     });
   });
 
@@ -69,42 +86,28 @@ export function CalendarEventForm() {
       </div>
       <div className="space-y-2">
         <Label>Tipo</Label>
-        <Select
-          value={kind}
-          onValueChange={(value) =>
-            form.setValue("kind", value as CalendarEventSchema["kind"])
-          }
+        <select
+          {...form.register("kind")}
+          className="border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 h-11 w-full rounded-2xl border bg-white px-3 text-sm outline-none focus-visible:ring-3"
         >
-          <SelectTrigger className="rounded-2xl">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="school">Escola</SelectItem>
-            <SelectItem value="medical">Saúde</SelectItem>
-            <SelectItem value="billing">Financeiro</SelectItem>
-            <SelectItem value="family">Família</SelectItem>
-            <SelectItem value="shopping">Compras</SelectItem>
-            <SelectItem value="task">Tarefa</SelectItem>
-          </SelectContent>
-        </Select>
+          <option value="school">Escola</option>
+          <option value="medical">Saúde</option>
+          <option value="billing">Financeiro</option>
+          <option value="family">Família</option>
+          <option value="shopping">Compras</option>
+          <option value="task">Tarefa</option>
+        </select>
       </div>
       <div className="space-y-2">
         <Label>Prioridade</Label>
-        <Select
-          value={priority}
-          onValueChange={(value) =>
-            form.setValue("priority", value as CalendarEventSchema["priority"])
-          }
+        <select
+          {...form.register("priority")}
+          className="border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 h-11 w-full rounded-2xl border bg-white px-3 text-sm outline-none focus-visible:ring-3"
         >
-          <SelectTrigger className="rounded-2xl">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="high">Alta</SelectItem>
-            <SelectItem value="medium">Média</SelectItem>
-            <SelectItem value="low">Baixa</SelectItem>
-          </SelectContent>
-        </Select>
+          <option value="high">Alta</option>
+          <option value="medium">Média</option>
+          <option value="low">Baixa</option>
+        </select>
       </div>
       <Button
         type="submit"

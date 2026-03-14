@@ -15,18 +15,18 @@ const calendarEventDeleteSchema = z.object({
 
 export async function createCalendarEventAction(values: unknown) {
   const payload = calendarEventSchema.parse(values);
-  await createCalendarEvent(payload);
+  const events = await createCalendarEvent(payload);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/agenda");
 
-  return { success: true };
+  return { success: true, events };
 }
 
 export async function deleteCalendarEventAction(values: unknown) {
   const payload = calendarEventDeleteSchema.parse(values);
-  await deleteCalendarEvent(payload.id);
+  const events = await deleteCalendarEvent(payload.id);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/agenda");
 
-  return { success: true };
+  return { success: true, events };
 }
