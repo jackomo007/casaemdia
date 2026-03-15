@@ -15,17 +15,41 @@ import type { ShoppingListSummary } from "@/types";
 import {
   createShoppingListItemAction,
   deleteShoppingListAction,
+  deleteShoppingListItemAction,
   updateShoppingListItemStatusAction,
 } from "@/server/actions/shopping-actions";
 
 export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
   const router = useRouter();
+  const [items, setItems] = useState(list.items);
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [estimatedCost, setEstimatedCost] = useState("");
   const [isSubmitting, startSubmitTransition] = useTransition();
   const [isToggling, startToggleTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [isDeletingItem, startDeleteItemTransition] = useTransition();
+  const [confirmDeleteList, setConfirmDeleteList] = useState(false);
+  const itemCount = items.length;
+  const completedItems = items.filter((item) => item.checked).length;
+  const checkedItemsCost = items
+    .filter((item) => item.checked)
+    .reduce((total, item) => total + item.estimatedCost, 0);
+  const totalItemsCost = items.reduce(
+    (total, item) => total + item.estimatedCost,
+    0,
+  );
+  const remainingBudget = list.estimatedTotal - totalItemsCost;
+  const isOverBudget = remainingBudget < 0;
+  const progress =
+    list.estimatedTotal > 0
+      ? Math.min(
+          100,
+          Math.round((checkedItemsCost / list.estimatedTotal) * 100),
+        )
+      : itemCount > 0
+        ? Math.round((completedItems / itemCount) * 100)
+        : 0;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,11 +79,18 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
   }
 
   function handleCheckedChange(itemId: string, checked: boolean) {
+    const previousItems = items;
+    const nextItems = items.map((item) =>
+      item.id === itemId ? { ...item, checked } : item,
+    );
+
+    setItems(nextItems);
     startToggleTransition(async () => {
       try {
         await updateShoppingListItemStatusAction({ id: itemId, checked });
         router.refresh();
       } catch (error) {
+        setItems(previousItems);
         toast.error(
           error instanceof Error
             ? error.message
@@ -70,10 +101,6 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
   }
 
   function handleDeleteList() {
-    if (!window.confirm(`Apagar a lista "${list.title}"?`)) {
-      return;
-    }
-
     startDeleteTransition(async () => {
       try {
         await deleteShoppingListAction({ id: list.id });
@@ -89,6 +116,27 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
     });
   }
 
+  function handleDeleteItem(itemId: string) {
+    const previousItems = items;
+    const nextItems = items.filter((item) => item.id !== itemId);
+
+    setItems(nextItems);
+    startDeleteItemTransition(async () => {
+      try {
+        await deleteShoppingListItemAction({ id: itemId });
+        toast.success("Item apagado.");
+        router.refresh();
+      } catch (error) {
+        setItems(previousItems);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível apagar o item.",
+        );
+      }
+    });
+  }
+
   return (
     <Card className="border-border/70 rounded-[28px] bg-white/90 shadow-[0_18px_46px_-36px_rgba(80,64,153,0.22)]">
       <CardContent className="space-y-5 p-5">
@@ -99,7 +147,7 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
                 {list.category}
               </span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-500">
-                {list.completedItems}/{list.itemCount || 0} itens
+                {completedItems}/{itemCount || 0} itens
               </span>
             </div>
             <div>
@@ -120,7 +168,7 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
               variant="ghost"
               disabled={isDeleting}
               className="rounded-2xl text-slate-500 hover:text-red-600"
-              onClick={handleDeleteList}
+              onClick={() => setConfirmDeleteList((current) => !current)}
               aria-label={`Apagar lista ${list.title}`}
             >
               <Trash2 className="h-4 w-4" />
@@ -133,22 +181,74 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm text-slate-500">
-            <span>{list.progress}% concluído</span>
+            <span>
+              {list.estimatedTotal > 0
+                ? `${progress}% do orçamento usado`
+                : `${progress}% concluído`}
+            </span>
             <span>{formatCurrency(list.estimatedTotal)}</span>
           </div>
-          <Progress value={list.progress} className="h-2 rounded-full" />
+          <Progress value={progress} className="h-2 rounded-full" />
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="text-slate-500">
+              Itens somados: {formatCurrency(totalItemsCost)}
+            </span>
+            <span
+              className={
+                isOverBudget ? "font-semibold text-red-600" : "text-emerald-700"
+              }
+            >
+              {isOverBudget
+                ? `Ultrapassou ${formatCurrency(Math.abs(remainingBudget))}`
+                : `Ainda restam ${formatCurrency(remainingBudget)}`}
+            </span>
+          </div>
+          {list.estimatedTotal > 0 ? (
+            <p className="text-xs text-slate-500">
+              Marcados como comprados: {formatCurrency(checkedItemsCost)}
+            </p>
+          ) : null}
         </div>
 
+        {confirmDeleteList ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm text-red-700">
+              Apagar a lista inteira e todos os itens dela?
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="rounded-2xl"
+                onClick={() => setConfirmDeleteList(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                disabled={isDeleting}
+                className="rounded-2xl"
+                onClick={handleDeleteList}
+              >
+                {isDeleting ? "Apagando..." : "Apagar lista"}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="space-y-3">
-          {list.items.length ? (
-            list.items.map((item) => (
-              <label
+          {items.length ? (
+            items.map((item) => (
+              <div
                 key={item.id}
                 className="flex items-start gap-3 rounded-2xl border border-slate-200/80 px-3 py-3"
               >
                 <Checkbox
                   checked={item.checked}
-                  disabled={isToggling}
+                  disabled={isToggling || isDeletingItem}
                   onCheckedChange={(checked) =>
                     handleCheckedChange(item.id, Boolean(checked))
                   }
@@ -173,7 +273,18 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
                   </div>
                   <p className="mt-1 text-xs text-slate-500">{item.quantity}</p>
                 </div>
-              </label>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  disabled={isDeletingItem}
+                  className="rounded-2xl text-slate-400 hover:text-red-600"
+                  onClick={() => handleDeleteItem(item.id)}
+                  aria-label={`Apagar item ${item.name}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             ))
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm leading-6 text-slate-500">
