@@ -28,6 +28,7 @@ export function ShoppingListForm({ selectedMonth }: { selectedMonth: string }) {
   const [kind, setKind] = useState<ShoppingListKind>("grocery");
   const [estimatedTotal, setEstimatedTotal] = useState("");
   const [description, setDescription] = useState("");
+  const kindLabel = kind === "grocery" ? "Mercado e rotina" : "Compra pontual";
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,7 +111,7 @@ export function ShoppingListForm({ selectedMonth }: { selectedMonth: string }) {
               onValueChange={(value) => setKind(value as ShoppingListKind)}
             >
               <SelectTrigger className="rounded-2xl">
-                <SelectValue />
+                <SelectValue>{kindLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="grocery">Mercado e rotina</SelectItem>
