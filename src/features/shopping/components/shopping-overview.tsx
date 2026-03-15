@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
@@ -27,9 +27,11 @@ import type { ShoppingListKind, ShoppingListSummary } from "@/types";
 function ShoppingLane({
   kind,
   lists,
+  onDeleteList,
 }: {
   kind: ShoppingListKind;
   lists: ShoppingListSummary[];
+  onDeleteList: (listId: string) => void;
 }) {
   const meta = getShoppingKindMeta(kind);
 
@@ -45,6 +47,7 @@ function ShoppingLane({
                   .map((item) => `${item.id}-${Number(item.checked)}`)
                   .join("-")}`}
                 list={list}
+                onDeleteList={onDeleteList}
               />
             ))
           ) : (
@@ -60,13 +63,21 @@ function ShoppingLane({
 }
 
 export function ShoppingOverview({ lists }: { lists: ShoppingListSummary[] }) {
-  const monthOptions = getShoppingMonthOptions(lists);
+  const [localLists, setLocalLists] = useState(lists);
+
+  useEffect(() => {
+    setLocalLists(lists);
+  }, [lists]);
+
+  const monthOptions = getShoppingMonthOptions(localLists);
   const defaultMonth = monthOptions[0];
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const activeMonth = monthOptions.includes(selectedMonth)
     ? selectedMonth
     : defaultMonth;
-  const monthlyLists = lists.filter((list) => list.monthKey === activeMonth);
+  const monthlyLists = localLists.filter(
+    (list) => list.monthKey === activeMonth,
+  );
   const groceryLists = monthlyLists.filter((list) => list.kind === "grocery");
   const plannedLists = monthlyLists.filter((list) => list.kind === "planned");
   const summary = buildShoppingMonthSummary(monthlyLists);
@@ -149,8 +160,24 @@ export function ShoppingOverview({ lists }: { lists: ShoppingListSummary[] }) {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <ShoppingLane kind="grocery" lists={groceryLists} />
-        <ShoppingLane kind="planned" lists={plannedLists} />
+        <ShoppingLane
+          kind="grocery"
+          lists={groceryLists}
+          onDeleteList={(listId) =>
+            setLocalLists((currentLists) =>
+              currentLists.filter((list) => list.id !== listId),
+            )
+          }
+        />
+        <ShoppingLane
+          kind="planned"
+          lists={plannedLists}
+          onDeleteList={(listId) =>
+            setLocalLists((currentLists) =>
+              currentLists.filter((list) => list.id !== listId),
+            )
+          }
+        />
       </div>
     </div>
   );

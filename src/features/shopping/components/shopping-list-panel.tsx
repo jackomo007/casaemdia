@@ -19,7 +19,13 @@ import {
   updateShoppingListItemStatusAction,
 } from "@/server/actions/shopping-actions";
 
-export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
+export function ShoppingListPanel({
+  list,
+  onDeleteList,
+}: {
+  list: ShoppingListSummary;
+  onDeleteList?: (listId: string) => void;
+}) {
   const router = useRouter();
   const [items, setItems] = useState(list.items);
   const [itemName, setItemName] = useState("");
@@ -105,6 +111,8 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
       try {
         await deleteShoppingListAction({ id: list.id });
         toast.success("Lista apagada.");
+        onDeleteList?.(list.id);
+        setConfirmDeleteList(false);
         router.refresh();
       } catch (error) {
         toast.error(
