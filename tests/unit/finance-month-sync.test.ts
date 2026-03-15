@@ -60,4 +60,40 @@ describe("replaceFinanceMonthEntries", () => {
     expect(marchEntries[0]?.amount).toBe(2600);
     expect(aprilEntries[0]?.amount).toBe(2400);
   });
+
+  it("inicia os meses copiados como pendentes", () => {
+    const context = {
+      scenario: "trialing" as const,
+      workspaceKey: `finance-sync-pending-${Date.now()}`,
+      workspacePreset: "blank" as const,
+      user: {
+        email: "teste-pending@example.com",
+        fullName: "Teste Pending",
+      },
+    };
+
+    const firstSave = replaceFinanceMonthEntries(context, {
+      monthKey: "2026-03",
+      copyToEmptyMonths: true,
+      rows: [
+        {
+          ...createRow(2400),
+          status: "paid" as const,
+          paymentDate: "2026-03-10T12:00:00.000Z",
+        },
+      ],
+    });
+
+    const marchEntry = firstSave.finance.entries.find((entry) =>
+      entry.competenceDate.startsWith("2026-03"),
+    );
+    const aprilEntry = firstSave.finance.entries.find((entry) =>
+      entry.competenceDate.startsWith("2026-04"),
+    );
+
+    expect(marchEntry?.status).toBe("paid");
+    expect(marchEntry?.paymentDate).toBe("2026-03-10T12:00:00.000Z");
+    expect(aprilEntry?.status).toBe("pending");
+    expect(aprilEntry?.paymentDate).toBeUndefined();
+  });
 });

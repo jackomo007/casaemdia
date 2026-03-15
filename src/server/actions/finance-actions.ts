@@ -40,12 +40,24 @@ export async function createFinanceSheetEntriesAction(values: unknown) {
 }
 
 export async function syncFinanceMonthPlanAction(values: unknown) {
-  const payload = financeMonthSyncSchema.parse(values);
-  await syncFinanceMonthPlan(payload);
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/financas");
+  try {
+    const payload = financeMonthSyncSchema.parse(values);
+    await syncFinanceMonthPlan(payload);
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/financas");
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to sync finance month plan.", error);
+
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar a planilha deste mês.",
+    };
+  }
 }
 
 export async function updateFinanceEntryStatusAction(values: unknown) {

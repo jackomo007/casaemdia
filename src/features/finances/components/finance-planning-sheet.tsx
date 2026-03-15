@@ -544,24 +544,31 @@ export function FinancePlanningSheet({
     }
 
     startTransition(async () => {
-      const result = await syncFinanceMonthPlanAction({
-        monthKey: selectedMonth,
-        rows: rowsToPersist,
-        copyToEmptyMonths: shouldCopyToYearOnSave,
-      });
+      try {
+        const result = await syncFinanceMonthPlanAction({
+          monthKey: selectedMonth,
+          rows: rowsToPersist,
+          copyToEmptyMonths: shouldCopyToYearOnSave,
+        });
 
-      if (!result.success) {
+        if (!result.success) {
+          toast.error(
+            result.message ?? "Não foi possível salvar a planilha deste mês.",
+          );
+          return;
+        }
+
+        setSavedRows(cloneRows(rows));
+        toast.success(
+          shouldCopyToYearOnSave
+            ? "Planilha salva e copiada para os meses vazios do ano."
+            : "Planilha do mês atualizada.",
+        );
+        router.refresh();
+      } catch (error) {
+        console.error("Failed to save finance planning sheet.", error);
         toast.error("Não foi possível salvar a planilha deste mês.");
-        return;
       }
-
-      setSavedRows(cloneRows(rows));
-      toast.success(
-        shouldCopyToYearOnSave
-          ? "Planilha salva e copiada para os meses vazios do ano."
-          : "Planilha do mês atualizada.",
-      );
-      router.refresh();
     });
   }
 

@@ -289,9 +289,14 @@ export function replaceFinanceMonthEntries(
     year,
   );
   const shouldCopyToEmptyMonths =
-    input.copyToEmptyMonths === true && filledMonthKeys.size === 0;
+    input.copyToEmptyMonths === true &&
+    (filledMonthKeys.size === 0 ||
+      (filledMonthKeys.size === 1 && filledMonthKeys.has(input.monthKey)));
   const targetMonths = shouldCopyToEmptyMonths
-    ? getYearMonthKeys(year)
+    ? getYearMonthKeys(year).filter(
+        (monthKey) =>
+          monthKey === input.monthKey || !filledMonthKeys.has(monthKey),
+      )
     : [input.monthKey];
   const remainingEntries = workspace.finance.entries.filter(
     (entry) =>
@@ -311,8 +316,11 @@ export function replaceFinanceMonthEntries(
       member: row.member,
       dueDate: getMonthDate(monthKey, getMonthDay(row.dueDate)),
       competenceDate: getMonthStart(monthKey),
-      paymentDate: row.paymentDate,
-      status: row.status,
+      paymentDate:
+        monthKey === input.monthKey && row.status === "paid"
+          ? row.paymentDate
+          : undefined,
+      status: monthKey === input.monthKey ? row.status : "pending",
       account: row.account,
       isFixed: row.section === "fixed",
     })),

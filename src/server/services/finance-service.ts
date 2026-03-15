@@ -22,6 +22,12 @@ import type {
   SyncFinanceMonthInput,
 } from "@/types";
 
+type ResolvedSyncRow = SyncFinanceMonthInput["rows"][number] & {
+  accountId: string | null;
+  categoryId: string | null;
+  memberId: string | null;
+};
+
 function slugify(value: string) {
   return value
     .normalize("NFD")
@@ -74,16 +80,16 @@ function getMonthRange(monthKey: string) {
   const year = Number(yearValue);
   const month = Number(monthValue);
 
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 1);
+  const start = new Date(Date.UTC(year, month - 1, 1));
+  const end = new Date(Date.UTC(year, month, 1));
 
   return { start, end };
 }
 
 function getYearRange(year: number) {
   return {
-    start: new Date(year, 0, 1),
-    end: new Date(year + 1, 0, 1),
+    start: new Date(Date.UTC(year, 0, 1)),
+    end: new Date(Date.UTC(year + 1, 0, 1)),
   };
 }
 
@@ -345,6 +351,113 @@ function mapSyncRowsToEntries(input: SyncFinanceMonthInput, monthKey: string) {
   }));
 }
 
+async function resolveSyncRows(
+  householdId: string,
+  userId: string,
+  rows: SyncFinanceMonthInput["rows"],
+) {
+  const categoryCache = new Map<string, Promise<string | null>>();
+  const accountCache = new Map<string, Promise<string | null>>();
+  const memberCache = new Map<string, Promise<string | null>>();
+
+  function getCategoryId(row: SyncFinanceMonthInput["rows"][number]) {
+    const kind = row.section === "income" ? "income" : "expense";
+    const normalizedName = row.category.trim().toLowerCase();
+    const key = `${kind}:${normalizedName}`;
+
+    if (!categoryCache.has(key)) {
+      categoryCache.set(
+        key,
+        findOrCreateCategory(householdId, row.category, kind),
+      );
+    }
+
+    return categoryCache.get(key)!;
+  }
+
+  function getAccountId(name: string) {
+    const normalizedName = name.trim().toLowerCase();
+
+    if (!accountCache.has(normalizedName)) {
+      accountCache.set(normalizedName, findOrCreateAccount(householdId, name));
+    }
+
+    return accountCache.get(normalizedName)!;
+  }
+
+  function getMemberId(name: string) {
+    const normalizedName = name.trim().toLowerCase();
+
+    if (!memberCache.has(normalizedName)) {
+      memberCache.set(
+        normalizedName,
+        findOrCreateMember(householdId, userId, name),
+      );
+    }
+
+    return memberCache.get(normalizedName)!;
+  }
+
+  return Promise.all(
+    rows.map(async (row) => ({
+      ...row,
+      title: row.title.trim(),
+      account: row.account.trim(),
+      category: row.category.trim(),
+      member: row.member.trim(),
+      categoryId: await getCategoryId(row),
+      accountId: await getAccountId(row.account),
+      memberId: await getMemberId(row.member),
+    })),
+  );
+}
+
+function buildMonthSyncPayloads(
+  rows: ResolvedSyncRow[],
+  sourceMonthKey: string,
+  monthKey: string,
+) {
+  const isSourceMonth = monthKey === sourceMonthKey;
+  const incomeEntries = rows
+    .filter((row) => row.section === "income")
+    .map((row) => ({
+      householdId: undefined as never,
+      categoryId: row.categoryId,
+      accountId: row.accountId,
+      memberId: row.memberId,
+      title: row.title,
+      amount: row.amount,
+      competenceDate: new Date(getMonthStart(monthKey)),
+      dueDate: new Date(getMonthDate(monthKey, getMonthDay(row.dueDate))),
+      status: mapStatusToDb(isSourceMonth ? row.status : "pending"),
+      receivedAt:
+        isSourceMonth && row.status === "paid"
+          ? new Date(row.paymentDate ?? new Date().toISOString())
+          : null,
+    }));
+
+  const expenseEntries = rows
+    .filter((row) => row.section !== "income")
+    .map((row) => ({
+      householdId: undefined as never,
+      categoryId: row.categoryId,
+      accountId: row.accountId,
+      memberId: row.memberId,
+      title: row.title,
+      amount: row.amount,
+      competenceDate: new Date(getMonthStart(monthKey)),
+      dueDate: new Date(getMonthDate(monthKey, getMonthDay(row.dueDate))),
+      status: mapStatusToDb(isSourceMonth ? row.status : "pending"),
+      paidAt:
+        isSourceMonth && row.status === "paid"
+          ? new Date(row.paymentDate ?? new Date().toISOString())
+          : null,
+      isFixed: row.section === "fixed",
+    }));
+
+  return { incomeEntries, expenseEntries };
+}
+
 function buildFinanceOverviewFromEntries(
   entries: FinanceEntry[],
 ): FinanceOverviewData {
@@ -561,37 +674,63 @@ export async function syncFinanceMonthPlan(input: SyncFinanceMonthInput) {
   const year = Number(yearValue);
   const filledMonthKeys = await getFilledMonthKeysInYear(householdId, year);
   const shouldCopyToEmptyMonths =
-    input.copyToEmptyMonths === true && filledMonthKeys.size === 0;
+    input.copyToEmptyMonths === true &&
+    (filledMonthKeys.size === 0 ||
+      (filledMonthKeys.size === 1 && filledMonthKeys.has(input.monthKey)));
+  const resolvedRows = await resolveSyncRows(householdId, userId, input.rows);
   const targetMonthKeys = shouldCopyToEmptyMonths
-    ? getYearMonthKeys(year)
+    ? getYearMonthKeys(year).filter(
+        (monthKey) =>
+          monthKey === input.monthKey || !filledMonthKeys.has(monthKey),
+      )
     : [input.monthKey];
 
   for (const monthKey of targetMonthKeys) {
-    const monthEntries = mapSyncRowsToEntries(input, monthKey);
     const { start, end } = getMonthRange(monthKey);
+    const { incomeEntries, expenseEntries } = buildMonthSyncPayloads(
+      resolvedRows,
+      input.monthKey,
+      monthKey,
+    );
 
-    await prisma.incomeEntry.deleteMany({
-      where: {
-        householdId,
-        competenceDate: {
-          gte: start,
-          lt: end,
+    await prisma.$transaction(async (tx) => {
+      await tx.incomeEntry.deleteMany({
+        where: {
+          householdId,
+          competenceDate: {
+            gte: start,
+            lt: end,
+          },
         },
-      },
-    });
-    await prisma.expenseEntry.deleteMany({
-      where: {
-        householdId,
-        competenceDate: {
-          gte: start,
-          lt: end,
+      });
+      await tx.expenseEntry.deleteMany({
+        where: {
+          householdId,
+          competenceDate: {
+            gte: start,
+            lt: end,
+          },
         },
-      },
-    });
+      });
 
-    for (const entry of monthEntries) {
-      await persistFinanceEntry(householdId, userId, entry);
-    }
+      if (incomeEntries.length) {
+        await tx.incomeEntry.createMany({
+          data: incomeEntries.map((entry) => ({
+            ...entry,
+            householdId,
+          })),
+        });
+      }
+
+      if (expenseEntries.length) {
+        await tx.expenseEntry.createMany({
+          data: expenseEntries.map((entry) => ({
+            ...entry,
+            householdId,
+          })),
+        });
+      }
+    });
   }
 
   return getDatabaseFinanceOverview(householdId);
