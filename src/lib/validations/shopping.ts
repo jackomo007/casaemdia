@@ -51,6 +51,11 @@ export const shoppingItemStatusSchema = z.object({
   checked: z.boolean(),
 });
 
+export const shoppingListDeleteSchema = z.object({
+  id: z.string().trim().min(1, "Selecione a lista."),
+});
+
 export type ShoppingListSchema = z.infer<typeof shoppingListSchema>;
 export type ShoppingListItemSchema = z.infer<typeof shoppingListItemSchema>;
 export type ShoppingItemStatusSchema = z.infer<typeof shoppingItemStatusSchema>;
+export type ShoppingListDeleteSchema = z.infer<typeof shoppingListDeleteSchema>;

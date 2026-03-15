@@ -4,12 +4,14 @@ import { revalidatePath } from "next/cache";
 
 import {
   shoppingItemStatusSchema,
+  shoppingListDeleteSchema,
   shoppingListItemSchema,
   shoppingListSchema,
 } from "@/lib/validations/shopping";
 import {
   createShoppingList,
   createShoppingListItem,
+  deleteShoppingList,
   updateShoppingListItemStatus,
 } from "@/server/services/shopping-service";
 
@@ -34,6 +36,15 @@ export async function createShoppingListItemAction(values: unknown) {
 export async function updateShoppingListItemStatusAction(values: unknown) {
   const payload = shoppingItemStatusSchema.parse(values);
   await updateShoppingListItemStatus(payload);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/compras");
+
+  return { success: true };
+}
+
+export async function deleteShoppingListAction(values: unknown) {
+  const payload = shoppingListDeleteSchema.parse(values);
+  await deleteShoppingList(payload);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/compras");
 

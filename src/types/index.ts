@@ -310,6 +310,10 @@ export interface UpdateShoppingListItemStatusInput {
   checked: boolean;
 }
 
+export interface DeleteShoppingListInput {
+  id: string;
+}
+
 export interface SelectPlanInput {
   planCode: PlanCode;
 }

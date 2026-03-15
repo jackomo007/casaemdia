@@ -606,6 +606,20 @@ export function updateShoppingItemStatus(
   return workspace;
 }
 
+export function removeShoppingList(
+  context: DemoStoreContext,
+  id: string,
+): HouseholdWorkspace {
+  const workspace = getWorkspace(context);
+
+  workspace.shoppingLists = workspace.shoppingLists.filter(
+    (list) => list.id !== id,
+  );
+  refreshShoppingSnapshots(workspace);
+
+  return workspace;
+}
+
 export function activatePlan(
   context: DemoStoreContext,
   planCode: string,

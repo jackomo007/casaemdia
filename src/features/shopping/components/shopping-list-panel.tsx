@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ShoppingBasket } from "lucide-react";
+import { ShoppingBasket, Trash2 } from "lucide-react";
 import { type FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -14,6 +14,7 @@ import { formatCurrency } from "@/lib/utils/formatters";
 import type { ShoppingListSummary } from "@/types";
 import {
   createShoppingListItemAction,
+  deleteShoppingListAction,
   updateShoppingListItemStatusAction,
 } from "@/server/actions/shopping-actions";
 
@@ -24,6 +25,7 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
   const [estimatedCost, setEstimatedCost] = useState("");
   const [isSubmitting, startSubmitTransition] = useTransition();
   const [isToggling, startToggleTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,6 +69,26 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
     });
   }
 
+  function handleDeleteList() {
+    if (!window.confirm(`Apagar a lista "${list.title}"?`)) {
+      return;
+    }
+
+    startDeleteTransition(async () => {
+      try {
+        await deleteShoppingListAction({ id: list.id });
+        toast.success("Lista apagada.");
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível apagar a lista.",
+        );
+      }
+    });
+  }
+
   return (
     <Card className="border-border/70 rounded-[28px] bg-white/90 shadow-[0_18px_46px_-36px_rgba(80,64,153,0.22)]">
       <CardContent className="space-y-5 p-5">
@@ -91,9 +113,21 @@ export function ShoppingListPanel({ list }: { list: ShoppingListSummary }) {
               ) : null}
             </div>
           </div>
-
-          <div className="bg-primary/10 text-primary flex h-11 w-11 items-center justify-center rounded-2xl">
-            <ShoppingBasket className="h-5 w-5" />
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              disabled={isDeleting}
+              className="rounded-2xl text-slate-500 hover:text-red-600"
+              onClick={handleDeleteList}
+              aria-label={`Apagar lista ${list.title}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <div className="bg-primary/10 text-primary flex h-11 w-11 items-center justify-center rounded-2xl">
+              <ShoppingBasket className="h-5 w-5" />
+            </div>
           </div>
         </div>
 

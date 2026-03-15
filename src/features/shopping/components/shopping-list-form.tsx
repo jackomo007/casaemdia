@@ -8,13 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { formatShoppingMonthLabel } from "@/features/shopping/lib/shopping";
 import type { ShoppingListKind } from "@/types";
@@ -28,7 +21,6 @@ export function ShoppingListForm({ selectedMonth }: { selectedMonth: string }) {
   const [kind, setKind] = useState<ShoppingListKind>("grocery");
   const [estimatedTotal, setEstimatedTotal] = useState("");
   const [description, setDescription] = useState("");
-  const kindLabel = kind === "grocery" ? "Mercado e rotina" : "Compra pontual";
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -106,18 +98,24 @@ export function ShoppingListForm({ selectedMonth }: { selectedMonth: string }) {
 
           <div className="space-y-2">
             <Label>Tipo de compra</Label>
-            <Select
-              value={kind}
-              onValueChange={(value) => setKind(value as ShoppingListKind)}
-            >
-              <SelectTrigger className="rounded-2xl">
-                <SelectValue>{kindLabel}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="grocery">Mercado e rotina</SelectItem>
-                <SelectItem value="planned">Compra pontual</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={kind === "grocery" ? "default" : "outline"}
+                className="h-11 rounded-2xl"
+                onClick={() => setKind("grocery")}
+              >
+                Mercado e rotina
+              </Button>
+              <Button
+                type="button"
+                variant={kind === "planned" ? "default" : "outline"}
+                className="h-11 rounded-2xl"
+                onClick={() => setKind("planned")}
+              >
+                Compra pontual
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">

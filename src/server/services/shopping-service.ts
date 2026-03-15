@@ -6,12 +6,14 @@ import {
   addShoppingList,
   addShoppingListItem,
   getWorkspaceSnapshot,
+  removeShoppingList,
   updateShoppingItemStatus,
 } from "@/server/repositories/demo-store";
 import { getCurrentWorkspace } from "@/server/services/current-workspace-service";
 import type {
   CreateShoppingListInput,
   CreateShoppingListItemInput,
+  DeleteShoppingListInput,
   ShoppingListKind,
   ShoppingListSummary,
   UpdateShoppingListItemStatusInput,
@@ -394,6 +396,32 @@ export async function updateShoppingListItemStatus(
   await prisma.shoppingListItem.update({
     where: { id: shoppingItem.id },
     data: { isPurchased: input.checked },
+  });
+
+  return getDatabaseShoppingLists(workspace.household.id);
+}
+
+export async function deleteShoppingList(input: DeleteShoppingListInput) {
+  const { session, workspace } = await getCurrentWorkspace();
+
+  if (!workspace) {
+    return removeShoppingList(session, input.id).shoppingLists;
+  }
+
+  const shoppingList = await prisma.shoppingList.findFirst({
+    where: {
+      id: input.id,
+      householdId: workspace.household.id,
+    },
+    select: { id: true },
+  });
+
+  if (!shoppingList) {
+    throw new Error("Lista de compras não encontrada.");
+  }
+
+  await prisma.shoppingList.delete({
+    where: { id: shoppingList.id },
   });
 
   return getDatabaseShoppingLists(workspace.household.id);
