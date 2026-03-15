@@ -289,13 +289,9 @@ export function replaceFinanceMonthEntries(
     year,
   );
   const shouldCopyToEmptyMonths =
-    filledMonthKeys.size === 0 ||
-    (filledMonthKeys.size === 1 && filledMonthKeys.has(input.monthKey));
+    input.copyToEmptyMonths === true && filledMonthKeys.size === 0;
   const targetMonths = shouldCopyToEmptyMonths
-    ? getYearMonthKeys(year).filter(
-        (monthKey) =>
-          monthKey === input.monthKey || !filledMonthKeys.has(monthKey),
-      )
+    ? getYearMonthKeys(year)
     : [input.monthKey];
   const remainingEntries = workspace.finance.entries.filter(
     (entry) =>

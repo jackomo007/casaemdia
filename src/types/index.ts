@@ -262,6 +262,7 @@ export interface SyncFinanceMonthRowInput {
 export interface SyncFinanceMonthInput {
   monthKey: string;
   rows: SyncFinanceMonthRowInput[];
+  copyToEmptyMonths?: boolean;
 }
 
 export interface CreateCalendarEventInput {

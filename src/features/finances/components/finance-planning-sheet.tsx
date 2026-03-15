@@ -547,6 +547,7 @@ export function FinancePlanningSheet({
       const result = await syncFinanceMonthPlanAction({
         monthKey: selectedMonth,
         rows: rowsToPersist,
+        copyToEmptyMonths: shouldCopyToYearOnSave,
       });
 
       if (!result.success) {

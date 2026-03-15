@@ -561,13 +561,9 @@ export async function syncFinanceMonthPlan(input: SyncFinanceMonthInput) {
   const year = Number(yearValue);
   const filledMonthKeys = await getFilledMonthKeysInYear(householdId, year);
   const shouldCopyToEmptyMonths =
-    filledMonthKeys.size === 0 ||
-    (filledMonthKeys.size === 1 && filledMonthKeys.has(input.monthKey));
+    input.copyToEmptyMonths === true && filledMonthKeys.size === 0;
   const targetMonthKeys = shouldCopyToEmptyMonths
-    ? getYearMonthKeys(year).filter(
-        (monthKey) =>
-          monthKey === input.monthKey || !filledMonthKeys.has(monthKey),
-      )
+    ? getYearMonthKeys(year)
     : [input.monthKey];
 
   for (const monthKey of targetMonthKeys) {

@@ -12,6 +12,9 @@ type ProvisionUserInput = {
   supabaseUserId?: string | null;
 };
 
+let hasUserPreferenceTableCache: boolean | null = null;
+let hasLoggedMissingUserPreferenceTable = false;
+
 function slugify(value: string) {
   return value
     .normalize("NFD")
@@ -34,10 +37,44 @@ function isMissingUserPreferenceTable(error: unknown) {
   );
 }
 
+async function hasUserPreferenceTable() {
+  if (hasUserPreferenceTableCache !== null) {
+    return hasUserPreferenceTableCache;
+  }
+
+  const result = await prisma.$queryRaw<Array<{ exists: boolean }>>(Prisma.sql`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = 'UserPreference'
+    ) AS "exists"
+  `);
+
+  hasUserPreferenceTableCache = result[0]?.exists === true;
+  return hasUserPreferenceTableCache;
+}
+
+function logMissingUserPreferenceTableOnce() {
+  if (hasLoggedMissingUserPreferenceTable) {
+    return;
+  }
+
+  hasLoggedMissingUserPreferenceTable = true;
+  console.warn(
+    "Skipping default user preference creation because the UserPreference table is missing.",
+  );
+}
+
 async function ensureDefaultUserPreference(
   householdId: string,
   userId: string,
 ) {
+  if (!(await hasUserPreferenceTable())) {
+    logMissingUserPreferenceTableOnce();
+    return;
+  }
+
   try {
     await prisma.userPreference.upsert({
       where: {
@@ -54,9 +91,8 @@ async function ensureDefaultUserPreference(
     });
   } catch (error) {
     if (isMissingUserPreferenceTable(error)) {
-      console.warn(
-        "Skipping default user preference creation because the UserPreference table is missing.",
-      );
+      hasUserPreferenceTableCache = false;
+      logMissingUserPreferenceTableOnce();
       return;
     }
 

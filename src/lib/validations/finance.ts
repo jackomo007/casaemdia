@@ -63,6 +63,7 @@ export const financeMonthRowSchema = z.object({
 export const financeMonthSyncSchema = z.object({
   monthKey: z.string().regex(/^\d{4}-\d{2}$/, "Selecione um mês válido."),
   rows: z.array(financeMonthRowSchema),
+  copyToEmptyMonths: z.boolean().optional(),
 });
 
 export const financeEntryStatusSchema = z.object({

@@ -1,5 +1,6 @@
 import {
   financeEntrySchema,
+  financeMonthSyncSchema,
   financeSheetSchema,
 } from "@/lib/validations/finance";
 
@@ -57,6 +58,27 @@ describe("financeEntrySchema", () => {
         account: "Conta principal",
       },
     ]);
+
+    expect(result.success).toBe(true);
+  });
+
+  it("aceita a flag de copia apenas no primeiro salvamento mensal", () => {
+    const result = financeMonthSyncSchema.safeParse({
+      monthKey: "2026-03",
+      copyToEmptyMonths: true,
+      rows: [
+        {
+          title: "Aluguel",
+          amount: 2400,
+          dueDate: "2026-03-10",
+          account: "Planejamento essencial",
+          status: "pending",
+          section: "fixed",
+          category: "Essencial",
+          member: "Casa",
+        },
+      ],
+    });
 
     expect(result.success).toBe(true);
   });
