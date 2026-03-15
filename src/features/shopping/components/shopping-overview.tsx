@@ -39,7 +39,14 @@ function ShoppingLane({
         <SectionHeader title={meta.label} description={meta.description} />
         <div className="space-y-4">
           {lists.length ? (
-            lists.map((list) => <ShoppingListPanel key={list.id} list={list} />)
+            lists.map((list) => (
+              <ShoppingListPanel
+                key={`${list.id}-${list.itemCount}-${list.completedItems}-${list.items
+                  .map((item) => `${item.id}-${Number(item.checked)}`)
+                  .join("-")}`}
+                list={list}
+              />
+            ))
           ) : (
             <EmptyState
               title={`Sem listas em ${meta.label.toLowerCase()}`}

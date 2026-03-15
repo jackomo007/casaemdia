@@ -314,6 +314,10 @@ export interface DeleteShoppingListInput {
   id: string;
 }
 
+export interface DeleteShoppingListItemInput {
+  id: string;
+}
+
 export interface SelectPlanInput {
   planCode: PlanCode;
 }

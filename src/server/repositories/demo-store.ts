@@ -620,6 +620,23 @@ export function removeShoppingList(
   return workspace;
 }
 
+export function removeShoppingListItem(
+  context: DemoStoreContext,
+  id: string,
+): HouseholdWorkspace {
+  const workspace = getWorkspace(context);
+
+  workspace.shoppingLists = workspace.shoppingLists.map((list) =>
+    hydrateShoppingList({
+      ...list,
+      items: list.items.filter((item) => item.id !== id),
+    }),
+  );
+  refreshShoppingSnapshots(workspace);
+
+  return workspace;
+}
+
 export function activatePlan(
   context: DemoStoreContext,
   planCode: string,
