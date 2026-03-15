@@ -1,6 +1,8 @@
 import type {
   CreateCalendarEventInput,
   CreateFinanceEntryInput,
+  CreateShoppingListInput,
+  CreateShoppingListItemInput,
   CreateTaskInput,
   DemoScenario,
   FinanceEntry,
@@ -8,9 +10,14 @@ import type {
   HouseholdWorkspace,
   SessionUser,
   SyncFinanceMonthInput,
+  UpdateShoppingListItemStatusInput,
   WorkspacePreset,
 } from "@/types";
-import { getMonthKeyFromDateValue, toDateOnly } from "@/lib/utils/date";
+import {
+  getCurrentMonthKey,
+  getMonthKeyFromDateValue,
+  toDateOnly,
+} from "@/lib/utils/date";
 import {
   createBlankWorkspace,
   getDemoWorkspace,
@@ -67,6 +74,13 @@ function getFinanceMonthLabel(value: string) {
 
   const normalized = formatted.replace(".", "");
   return normalized.charAt(0).toUpperCase() + normalized.slice(1, 3);
+}
+
+function formatCurrencyValue(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
 }
 
 function slugify(value: string) {
@@ -164,6 +178,52 @@ function refreshFinanceSnapshots(workspace: HouseholdWorkspace) {
   workspace.dashboard.finance = workspace.finance.summary;
 }
 
+function hydrateShoppingList(
+  list: HouseholdWorkspace["shoppingLists"][number],
+): HouseholdWorkspace["shoppingLists"][number] {
+  const itemCount = list.items.length;
+  const completedItems = list.items.filter((item) => item.checked).length;
+  const estimatedFromItems = list.items.reduce(
+    (total, item) => total + item.estimatedCost,
+    0,
+  );
+
+  return {
+    ...list,
+    estimatedTotal:
+      list.estimatedTotal > 0 ? list.estimatedTotal : estimatedFromItems,
+    itemCount,
+    completedItems,
+    progress:
+      itemCount > 0 ? Math.round((completedItems / itemCount) * 100) : 0,
+  };
+}
+
+function refreshShoppingSnapshots(workspace: HouseholdWorkspace) {
+  workspace.shoppingLists = workspace.shoppingLists.map(hydrateShoppingList);
+
+  const currentMonth = getCurrentMonthKey();
+  const currentMonthLists = workspace.shoppingLists
+    .filter((list) => list.monthKey === currentMonth)
+    .sort((left, right) => right.estimatedTotal - left.estimatedTotal);
+  const openTotal = currentMonthLists
+    .filter((list) => list.progress < 100)
+    .reduce((total, list) => total + list.estimatedTotal, 0);
+  const shoppingMetric = workspace.dashboard.metrics.find(
+    (metric) => metric.id === "metric-shopping",
+  );
+
+  workspace.dashboard.shoppingLists = currentMonthLists.slice(0, 4);
+
+  if (shoppingMetric) {
+    shoppingMetric.value = formatCurrencyValue(openTotal);
+    shoppingMetric.helper = currentMonthLists.length
+      ? `${currentMonthLists.filter((list) => list.progress < 100).length} lista(s) ativa(s) neste mês.`
+      : "Nenhuma lista de compras ativa.";
+    shoppingMetric.trend = currentMonthLists.length ? "up" : "neutral";
+  }
+}
+
 function getMonthDate(monthKey: string, day: number) {
   const [yearValue, monthValue] = monthKey.split("-");
   const year = Number(yearValue);
@@ -236,7 +296,9 @@ function upsertMonthlyFlowEntry(
 export function getWorkspaceSnapshot(
   context: DemoStoreContext,
 ): HouseholdWorkspace {
-  return getWorkspace(context);
+  const workspace = getWorkspace(context);
+  refreshShoppingSnapshots(workspace);
+  return workspace;
 }
 
 export function addFinanceEntry(
@@ -464,6 +526,82 @@ export function addTask(
 
   workspace.tasks = [task, ...workspace.tasks];
   workspace.dashboard.pendingTasks = workspace.tasks.slice(0, 4);
+
+  return workspace;
+}
+
+export function addShoppingList(
+  context: DemoStoreContext,
+  input: CreateShoppingListInput,
+): HouseholdWorkspace {
+  const workspace = getWorkspace(context);
+  const shoppingList = hydrateShoppingList({
+    id: `shopping-${Date.now()}`,
+    title: input.title,
+    category: input.category,
+    description: input.description?.trim() || undefined,
+    kind: input.kind,
+    monthKey: input.monthKey,
+    estimatedTotal: input.estimatedTotal ?? 0,
+    progress: 0,
+    itemCount: 0,
+    completedItems: 0,
+    items: [],
+  });
+
+  workspace.shoppingLists = [shoppingList, ...workspace.shoppingLists].sort(
+    (left, right) =>
+      right.monthKey.localeCompare(left.monthKey) ||
+      right.title.localeCompare(left.title),
+  );
+  refreshShoppingSnapshots(workspace);
+
+  return workspace;
+}
+
+export function addShoppingListItem(
+  context: DemoStoreContext,
+  input: CreateShoppingListItemInput,
+): HouseholdWorkspace {
+  const workspace = getWorkspace(context);
+
+  workspace.shoppingLists = workspace.shoppingLists.map((list) =>
+    list.id === input.shoppingListId
+      ? hydrateShoppingList({
+          ...list,
+          items: [
+            ...list.items,
+            {
+              id: `shopping-item-${Date.now()}`,
+              name: input.name,
+              quantity: input.quantity?.trim() || "1 item",
+              estimatedCost: input.estimatedCost ?? 0,
+              checked: false,
+            },
+          ],
+        })
+      : list,
+  );
+  refreshShoppingSnapshots(workspace);
+
+  return workspace;
+}
+
+export function updateShoppingItemStatus(
+  context: DemoStoreContext,
+  input: UpdateShoppingListItemStatusInput,
+): HouseholdWorkspace {
+  const workspace = getWorkspace(context);
+
+  workspace.shoppingLists = workspace.shoppingLists.map((list) =>
+    hydrateShoppingList({
+      ...list,
+      items: list.items.map((item) =>
+        item.id === input.id ? { ...item, checked: input.checked } : item,
+      ),
+    }),
+  );
+  refreshShoppingSnapshots(workspace);
 
   return workspace;
 }

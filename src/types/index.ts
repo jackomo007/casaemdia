@@ -31,6 +31,8 @@ export type FinanceEntryKind = "income" | "expense";
 
 export type FinancialStatus = "paid" | "pending" | "overdue";
 
+export type ShoppingListKind = "grocery" | "planned";
+
 export interface MetricCardData {
   id: string;
   label: string;
@@ -84,8 +86,13 @@ export interface ShoppingListSummary {
   id: string;
   title: string;
   category: string;
+  description?: string;
+  kind: ShoppingListKind;
+  monthKey: string;
   estimatedTotal: number;
   progress: number;
+  itemCount: number;
+  completedItems: number;
   items: ShoppingListItemSummary[];
 }
 
@@ -280,6 +287,27 @@ export interface CreateTaskInput {
   priority: PriorityLevel;
   assignee: string;
   points?: number;
+}
+
+export interface CreateShoppingListInput {
+  title: string;
+  category: string;
+  description?: string;
+  kind: ShoppingListKind;
+  monthKey: string;
+  estimatedTotal?: number;
+}
+
+export interface CreateShoppingListItemInput {
+  shoppingListId: string;
+  name: string;
+  quantity?: string;
+  estimatedCost?: number;
+}
+
+export interface UpdateShoppingListItemStatusInput {
+  id: string;
+  checked: boolean;
 }
 
 export interface SelectPlanInput {
