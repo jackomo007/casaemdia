@@ -96,6 +96,28 @@ function parseAmount(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isZeroAmountValue(value: string) {
+  return /^0(?:[.,]0{0,2})?$/.test(value.trim());
+}
+
+function getNextAmountValue(previousValue: string, nextValue: string) {
+  const rawNextValue = nextValue.trim();
+
+  if (!rawNextValue) {
+    return "";
+  }
+
+  if (
+    isZeroAmountValue(previousValue) &&
+    nextValue.startsWith(previousValue) &&
+    nextValue.length > previousValue.length
+  ) {
+    return nextValue.slice(previousValue.length);
+  }
+
+  return nextValue;
+}
+
 function getSectionMeta(section: PlanningSection) {
   if (section === "income") {
     return {
@@ -478,7 +500,10 @@ export function FinancePlanningSheet({
         row.clientId === clientId
           ? {
               ...row,
-              [key]: value,
+              [key]:
+                key === "amount"
+                  ? getNextAmountValue(row.amount, value)
+                  : value,
               paymentDate:
                 key === "status"
                   ? value === "paid"
@@ -703,6 +728,17 @@ export function FinancePlanningSheet({
                           <Input
                             inputMode="decimal"
                             value={row.amount}
+                            onFocus={(event) => {
+                              if (!isZeroAmountValue(row.amount)) {
+                                return;
+                              }
+
+                              const input = event.currentTarget;
+
+                              requestAnimationFrame(() => {
+                                input.select();
+                              });
+                            }}
                             onChange={(event) =>
                               updateRow(
                                 row.clientId,
