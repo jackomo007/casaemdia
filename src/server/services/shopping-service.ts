@@ -1,5 +1,7 @@
 import "server-only";
 
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/db/prisma";
 import { getMonthKeyFromDateValue } from "@/lib/utils/date";
 import {
@@ -22,6 +24,7 @@ import type {
 } from "@/types";
 
 const SHOPPING_META_PREFIX = "[shopping-meta]";
+let hasExtendedShoppingSchemaCache: boolean | null = null;
 
 function slugify(value: string) {
   return value
@@ -49,22 +52,28 @@ function mapShoppingKindToDb(kind: ShoppingListKind) {
   return kind === "planned" ? ("PLANNED" as const) : ("GROCERY" as const);
 }
 
-function hasExtendedShoppingSchema() {
-  const fields =
-    (
-      prisma as typeof prisma & {
-        _runtimeDataModel?: {
-          models?: {
-            ShoppingList?: {
-              fields?: Array<{ name: string }>;
-            };
-          };
-        };
-      }
-    )._runtimeDataModel?.models?.ShoppingList?.fields ?? [];
-  const names = new Set(fields.map((field) => field.name));
+function isMissingShoppingSchemaColumn(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2022"
+  );
+}
 
-  return names.has("kind") && names.has("referenceMonth");
+async function hasExtendedShoppingSchema() {
+  if (hasExtendedShoppingSchemaCache !== null) {
+    return hasExtendedShoppingSchemaCache;
+  }
+
+  const result = await prisma.$queryRaw<Array<{ count: number }>>(Prisma.sql`
+    SELECT CAST(COUNT(*) AS INTEGER) AS "count"
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'ShoppingList'
+      AND column_name IN ('kind', 'referenceMonth')
+  `);
+
+  hasExtendedShoppingSchemaCache = result[0]?.count === 2;
+  return hasExtendedShoppingSchemaCache;
 }
 
 function encodeLegacyDescription(input: CreateShoppingListInput) {
@@ -152,7 +161,7 @@ async function findOrCreateShoppingCategory(householdId: string, name: string) {
 }
 
 async function getDatabaseShoppingLists(householdId: string) {
-  if (!hasExtendedShoppingSchema()) {
+  if (!(await hasExtendedShoppingSchema())) {
     return getLegacyDatabaseShoppingLists(householdId);
   }
 
@@ -212,15 +221,25 @@ async function getDatabaseShoppingLists(householdId: string) {
         items,
       };
     });
-  } catch {
-    return getLegacyDatabaseShoppingLists(householdId);
+  } catch (error) {
+    if (isMissingShoppingSchemaColumn(error)) {
+      hasExtendedShoppingSchemaCache = false;
+      return getLegacyDatabaseShoppingLists(householdId);
+    }
+
+    throw error;
   }
 }
 
 async function getLegacyDatabaseShoppingLists(householdId: string) {
   const lists = await prisma.shoppingList.findMany({
     where: { householdId },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      estimatedTotal: true,
+      createdAt: true,
       category: {
         select: { name: true },
       },
@@ -317,7 +336,7 @@ export async function createShoppingList(input: CreateShoppingListInput) {
     input.category,
   );
 
-  if (!hasExtendedShoppingSchema()) {
+  if (!(await hasExtendedShoppingSchema())) {
     return createLegacyShoppingList(workspace.household.id, categoryId, input);
   }
 
@@ -333,8 +352,17 @@ export async function createShoppingList(input: CreateShoppingListInput) {
         referenceMonth: getReferenceMonthDate(input.monthKey),
       },
     });
-  } catch {
-    return createLegacyShoppingList(workspace.household.id, categoryId, input);
+  } catch (error) {
+    if (isMissingShoppingSchemaColumn(error)) {
+      hasExtendedShoppingSchemaCache = false;
+      return createLegacyShoppingList(
+        workspace.household.id,
+        categoryId,
+        input,
+      );
+    }
+
+    throw error;
   }
 
   return getDatabaseShoppingLists(workspace.household.id);
